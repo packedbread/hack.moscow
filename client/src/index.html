@@ -7,10 +7,17 @@
     <link rel="stylesheet" href="styles.scss">
     <script src="scripts/main.ts"></script>
     <title>Document</title>
+    <style>
+        :root {
+            --bpm: 128;
+            --color: #ff6200;
+        }
+    </style>
 </head>
 <body>
     <canvas id="background"></canvas>
     <div id="timeline">
+        <canvas id="waveform"></canvas>
         <div id="cursors"></div>
     </div>
 </body>

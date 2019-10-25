@@ -14,7 +14,9 @@ body {
 }
 
 $timeline-height: 10rem;
-$cursor-overflow: 2rem;
+$cursor-overflow: 1.5rem;
+$triangle-min-size: 2.5rem;
+$triangle-max-delta: 2.7rem;
 
 #background {
     width: 100%;
@@ -32,8 +34,50 @@ $cursor-overflow: 2rem;
 }
 
 #cursors {
+    position: relative;
     width: $cursor-overflow;
     height: $timeline-height + 2 * $cursor-overflow;
     margin: -$cursor-overflow auto;
-    background-color: orange;
+    background-color: transparent;
+
+    &:before, &:after {
+        position: absolute;
+        width: 100%;
+
+        height: 2rem;
+        color: var(--color);
+        opacity: 0.8;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        animation: pulse 1s 0s infinite;
+        animation-timing-function: ease-in-out;
+        animation-duration: calc(60 / var(--bpm) * 1s);
+    }
+
+    @keyframes pulse {
+        0% { font-size: $triangle-min-size; }
+        50% { font-size: $triangle-max-delta; }
+        100% { font-size: $triangle-min-size; }
+    }
+
+    &:before {
+        top: 0;
+        content: '▼';
+    }
+
+    &:after {
+        bottom: 0;
+        content: '▲	';
+    }
+}
+
+#waveform {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    height: $timeline-height - 2rem;
+    width: 100%;
 }
