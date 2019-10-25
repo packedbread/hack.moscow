@@ -1,5 +1,8 @@
 from aiohttp import web
+
 import logging
+import os
+
 
 logger = logging.getLogger(__name__)
 
@@ -31,4 +34,4 @@ app.add_routes([web.post('/upload', upload_handler),
                 web.get(r'/from{from}to{to}', response_handler)])
 
 if __name__ == '__main__':
-    web.run_app(app)
+    web.run_app(app, port=os.getenv('PORT', 5000))
