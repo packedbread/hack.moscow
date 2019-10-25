@@ -2,8 +2,38 @@
     box-sizing: border-box;
 }
 
-body {
+html, body {
+    width: 100%;
+    height: 100%;
     margin: 0;
     padding: 0;
-    background-color: black;
+}
+
+body {
+    overflow: hidden;
+}
+
+$timeline-height: 10rem;
+$cursor-overflow: 2rem;
+
+#background {
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(#333, black);
+}
+
+#timeline {
+    width: 100%;
+    height: $timeline-height;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: #ffffff22;
+}
+
+#cursors {
+    width: $cursor-overflow;
+    height: $timeline-height + 2 * $cursor-overflow;
+    margin: -$cursor-overflow auto;
+    background-color: orange;
 }
