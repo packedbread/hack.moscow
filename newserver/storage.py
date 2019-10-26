@@ -10,7 +10,7 @@ from itertools import chain
 
 import algorithms
 
-JUMP_DETECTOR_CLASS = algorithms.FirstJumpDetector
+JUMP_DETECTOR_CLASS = algorithms.LevJumpDetector
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,21 @@ class ClientStorage:
                 left_items = items.difference(jumps_to_remove)
                 if len(left_items) > limit:
                     jumps_to_remove.update(random.choices(left_items, k=len(left_items) - limit))
-        return self.jumps[[i for i in range(self.jumps.shape[0]) if i not in jumps_to_remove]]
+        res = self.jumps[[i for i in range(self.jumps.shape[0]) if i not in jumps_to_remove]]
+        res.sort()
+        return res
 
-    def make_next_jump(self, current_time):
-        return random.choice(self.jumps)
+    def next_jump(self, current_time):
+        first = 0
+        for i in range(len(self.jumps)):
+            if self.jumps[i][0] > current_time:
+                first = i
+                break
+        answ = 0
+        while True:
+            if abs(current_time - self.jumps[first][0]) > 2 and random.randint(0, 100) < 5:
+                answ = first
+                break
+            first += 1
+            first %= len(self.jumps)
+        return self.jumps[answ]
