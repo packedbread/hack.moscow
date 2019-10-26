@@ -1,0 +1,6 @@
+aiohttp
+scipy
+tqdm
+numpy
+tempfile
+ffmpeg-python

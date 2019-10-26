@@ -1,0 +1,135 @@
+@import url('https://fonts.googleapis.com/css?family=Fredoka+One&display=swap');
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    overflow: hidden;
+}
+
+%align-vertical-center {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+$timeline-height: 10rem;
+$cursor-overflow: 1.5rem;
+$triangle-min-size: 2.5rem;
+$triangle-max-delta: 2.7rem;
+
+#background {
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(#333, black);
+}
+
+#timeline {
+    @extend %align-vertical-center;
+    width: 100%;
+    height: $timeline-height;
+    background-color: #ffffff22;
+}
+
+#cursors {
+    position: relative;
+    width: $cursor-overflow;
+    height: $timeline-height + 2 * $cursor-overflow;
+    margin: -$cursor-overflow auto;
+    background-color: transparent;
+
+    &:before, &:after {
+        position: absolute;
+        width: 100%;
+
+        height: 2rem;
+        color: var(--color);
+        opacity: 0.8;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        animation: pulse 1s 0s infinite;
+        animation-timing-function: ease-in-out;
+        animation-duration: calc(60 / var(--bpm) * 1s);
+    }
+
+    @keyframes pulse {
+        0% {
+            font-size: $triangle-min-size;
+        }
+        50% {
+            font-size: $triangle-max-delta;
+        }
+        100% {
+            font-size: $triangle-min-size;
+        }
+    }
+
+    &:before {
+        top: 0;
+        content: '▼';
+    }
+
+    &:after {
+        bottom: 0;
+        content: '▲	';
+    }
+}
+
+#waveform {
+    @extend %align-vertical-center;
+    height: $timeline-height - 2rem;
+    width: 100%;
+}
+
+#button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    height: 10rem;
+    width: 30rem;
+    border-radius: 1rem;
+    overflow: hidden;
+
+    font-family: 'Fredoka One', cursive;;
+    text-transform: uppercase;
+    letter-spacing: 0.4rem;
+    color: white;
+    font-size: 3rem;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    &:after {
+        position: absolute;
+        content: '';
+        display: inline-block;
+        background: #3BADE3;
+        background: linear-gradient(45deg, #3BADE3 0%, #576FE6 25%, #9844B7 51%, #FF357F 100%);
+        height: 100%;
+        width: 150%;
+        z-index: -1;
+        left: -50%;
+        //transform: translateX(-50%);
+        transition: left 400ms ease-in;
+    }
+
+    &:hover {
+        &:after {
+            left: 0;
+        }
+    }
+}

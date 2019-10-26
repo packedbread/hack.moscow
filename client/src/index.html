@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="styles.scss">
+    <script src="scripts/main.ts"></script>
+    <title>Document</title>
+    <style>
+        :root {
+            --bpm: 128;
+            --color: #ff6200;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="background"></canvas>
+    <div id="button">Launch</div>
+    <input id="input" type="file" style="display: none;"/>
+    <div id="timeline" style="display: none;">
+        <canvas id="waveform"></canvas>
+        <div id="cursors"></div>
+    </div>
+</body>
+</html>
