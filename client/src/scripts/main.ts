@@ -1,11 +1,11 @@
 import 'babel-polyfill';
-import { $ } from './util';
-import { Audio } from './audio';
-import { Graphics } from './graphics/graphics';
-import { WaveformController } from './graphics/waveform_controller';
-import { CaretController } from './graphics/caret_controller';
-import { BackgroundController } from './graphics/background_controller';
-import { useAudio, getSongTime } from './time';
+import {$} from './util';
+import {Audio} from './audio';
+import {Graphics} from './graphics/graphics';
+import {WaveformController} from './graphics/waveform_controller';
+import {CaretController} from './graphics/caret_controller';
+import {BackgroundController} from './graphics/background_controller';
+import {useAudio, getSongTime} from './time';
 
 window.onload = () => {
     input = $('#input');
@@ -36,7 +36,7 @@ async function onTrackInput() {
     if (input.files.length == 0) {
         return;
     }
-    audio = new Audio(new AudioContext({ sampleRate }));
+    audio = new Audio(new AudioContext({sampleRate}));
     useAudio(audio);
     graphics = new Graphics(
         caretController = new CaretController(),
@@ -50,23 +50,13 @@ async function onTrackInput() {
     waveformController.freezeSignals(audio.getWaveforms());
     graphics.startLooping();
 
-    if (input.files.length == 1) {
-        // OLD VERSION (ONE FILE)
-        console.log(input.files[0]);
-        await fetch(host + '/upload', {
-            method: 'POST',
-            body: input.files[0],
-        });
-    } else {
-        // NEW VERSION (MULTIPLE FILES)
-        let data = new FormData();
-        for (const file of input.files)
-            data.append('files[]', file, file.name);
-        await fetch('/upload', {
-            method: 'POST',
-            body: data
-        });
-    }
+    let data = new FormData();
+    for (const file of input.files)
+        data.append('files[]', file, file.name);
+    await fetch('/upload', {
+        method: 'POST',
+        body: data
+    });
 
     const timeOut = 1000;
     (async function recurr() {
@@ -89,7 +79,7 @@ async function onTrackInput() {
 
 async function doJump(jump: Jump) {
     if (jump.from < audio.getTotalTime()) {
-        [ jump.from, jump.to ] = [ jump.to, jump.from ];
+        [jump.from, jump.to] = [jump.to, jump.from];
     }
     let timeToJump = audio.scheduleJump(jump);
     waveformController.scheduleJump(jump);
@@ -102,6 +92,6 @@ async function doJump(jump: Jump) {
 function jumpRequest(time: number) {
     return fetch(host + '/next', {
         method: 'POST',
-        body: JSON.stringify({ time })
+        body: JSON.stringify({time})
     });
 }
