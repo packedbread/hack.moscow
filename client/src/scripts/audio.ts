@@ -24,7 +24,7 @@ export class Audio {
     }
 
     private onChunkEnded(): void {
-        this.queue.pop();
+        this.queue.shift();
         if (this.queue.length != 0) {
             this.play();
         }
