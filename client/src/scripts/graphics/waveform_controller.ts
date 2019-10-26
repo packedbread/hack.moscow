@@ -12,7 +12,7 @@ export class WaveformController implements GraphicsController {
     private readonly canvas: HTMLCanvasElement;
 
     private pixiApp: PIXI.Application;
-    private bars: number[][];
+    private bars: number[];
 
     public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
@@ -31,7 +31,9 @@ export class WaveformController implements GraphicsController {
     }
 
     public freezeSignals(signals: Float32Array[]) {
-        this.bars = signals.map(this.freezeSignal);
+        let bars = this.bars = [];
+        signals.map(x => bars.push(...this.freezeSignal(x)));
+        console.log(bars);
     }
 
     private freezeSignal(signal: Float32Array) {
@@ -50,28 +52,28 @@ export class WaveformController implements GraphicsController {
     init() {
         window.addEventListener('resize', this.resizeCanvas);
         this.resizeCanvas();
-        // const barsInGraphics = Math.floor(Math.sqrt(this.bars.length));
-        // const totalWidth = this.pixelsPerBar * this.bars.length;
-        // const radius = this.pixelsPerBar / 2 - this.barPadding;
-        // const width = this.pixelsPerBar - this.barPadding * 2;
-        // for (let gr = 0; gr <= this.bars.length / barsInGraphics; ++gr) {
-        //     const bars = new PIXI.Graphics();
-        //     bars.beginFill(0xffffff);
-        //     for (let j = 0; j != barsInGraphics; ++j) {
-        //         const i = gr * barsInGraphics + j;
-        //         if (i >= this.bars.length) {
-        //             break;
-        //         }
-        //         const x = this.pixelsPerBar * i + this.barPadding;
-        //         const height = this.canvas.height * this.bars[i];
-        //         const y = this.canvas.height * (1 - this.bars[i]) / 2;
-        //         if (height < radius * 2) continue;
-        //         bars.drawRoundedRect(x, y, width, height, radius);
-        //         bars.drawRoundedRect(x + totalWidth, y, width, height, radius);
-        //     }
-        //     bars.endFill();
-        //     this.pixiApp.stage.addChild(bars);
-        // }
+        const barsInGraphics = Math.floor(Math.sqrt(this.bars.length));
+        const totalWidth = this.pixelsPerBar * this.bars.length;
+        const radius = this.pixelsPerBar / 2 - this.barPadding;
+        const width = this.pixelsPerBar - this.barPadding * 2;
+        for (let gr = 0; gr <= this.bars.length / barsInGraphics; ++gr) {
+            const bars = new PIXI.Graphics();
+            bars.beginFill(0xffffff);
+            for (let j = 0; j != barsInGraphics; ++j) {
+                const i = gr * barsInGraphics + j;
+                if (i >= this.bars.length) {
+                    break;
+                }
+                const x = this.pixelsPerBar * i + this.barPadding;
+                const height = Math.max(this.canvas.height * this.bars[i], radius * 2);
+                const y = (this.canvas.height - height) / 2;
+                // if (height < radius * 2) continue;
+                bars.drawRoundedRect(x, y, width, height, radius);
+                bars.drawRoundedRect(x + totalWidth, y, width, height, radius);
+            }
+            bars.endFill();
+            this.pixiApp.stage.addChild(bars);
+        }
     }
 
     public scheduleJump(jump: Jump) {
@@ -90,6 +92,7 @@ export class WaveformController implements GraphicsController {
 
     private resizeCanvas() {
         const { width, height } = this.canvas.getBoundingClientRect();
+        console.log(width, height);
         this.pixiApp.renderer.resize(width, height);
     }
 }

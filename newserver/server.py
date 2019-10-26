@@ -72,7 +72,6 @@ async def upload(request: web.Request):
 
 @routes.post('/next')
 async def get_next(request):
-    print(clients.clients)
     try: data = await request.json()
     except: data = {'time': 0}
     if not clients.clients: return web.HTTPNotFound()

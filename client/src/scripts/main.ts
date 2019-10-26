@@ -72,7 +72,7 @@ async function onTrackInput() {
             console.log('ok', json);
             if (json.ready) {
                 button.style.display = 'none';
-                timeline.style.display = 'block';
+                timeline.style.opacity = '1';
                 setInterval(() => {
                     $('#next-jump').innerText = `Next jump: ${round(lastJump.from)} >>> ${round(lastJump.to)}`;
                     $('#time-now').innerText = `Current time: ${round(audio.getTotalTime())}`;
