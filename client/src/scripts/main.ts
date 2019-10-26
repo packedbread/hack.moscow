@@ -1,54 +1,58 @@
-import {Audio} from './audio';
-import {Graphics} from './graphics/graphics';
-import {BackgroundController} from './graphics/background_controller';
-import {WaveformController} from './graphics/waveform_controller';
-import {$} from './util';
+import { $ } from './util';
+import { Audio } from './audio';
 
 window.onload = () => {
-    $('#button').onclick = main;
+    input = $('#input');
+    button = $('#button');
+    timeline = $('#timeline');
+    button.onclick = main;
 };
 
 const host = 'http://10.0.0.103:5000';
-const url = 'http://localhost:5000/audio';
 const sampleRate = 44100;
-const bpm = 120;
 
-async function fetchChunk(ctx: AudioContext) {
-    let res = await fetch(url);
-    if (res.status !== 200) {
-        console.log('Fetch error:', await res.text());
-        return null;
-    }
-    let buff = await res.arrayBuffer();
-    return ctx.decodeAudioData(buff);
-}
+var input: HTMLInputElement;
+var button: HTMLDivElement;
+var timeline: HTMLDivElement;
+
+var audio: Audio;
 
 async function main() {
-    let resolve = null;
-    let promise = new Promise(r => resolve = r);
-    $('#input').addEventListener('change', resolve, false);
-    $('#input').click();
-    $('#button').innerText = 'Processing...';
-    const ctx = new AudioContext({sampleRate});
-    await promise;
-    let files = $('#input').files;
+    input.addEventListener('change', onTrackInput, false);
+    input.click();
+    button.innerText = 'Processing...';
+}
 
-    // let buff = await ctx.decodeAudioData(await files[0].arrayBuffer());
-    // console.log(buff);
-
+async function onTrackInput() {
+    audio = new Audio(new AudioContext({ sampleRate }));
+    audio.play(await new Response(input.files[0]).arrayBuffer());
+    console.log(input.files[0]);
     await fetch(host + '/upload', {
         method: 'POST',
-        body: await files[0].arrayBuffer(),
+        body: input.files[0],
     });
+    const timeOut = 1000;
+    (async function recurr() {
+        const response = await fetch(host + '/next', {
+            method: 'POST',
+            body: JSON.stringify({ current_time: 0 })
+        });
+        console.log(response);
+        if (response.ok) {
+            startJumping();
+        } else {
+            setTimeout(recurr, timeOut);
+        }
+    })();
+}
 
-    // while (true) {
-    //     let res = await fetch(host + '/edges');
-    // }
-
-    // const audio = new Audio(ctx);
-    // const background = new BackgroundController();
-    // const waveform = new WaveformController(sampleRate);
-    // const graphics = new Graphics({ sampleRate, bpm, background, waveform });
-    // graphics.startLooping();
-    // audio.enqueueBuffer(await fetchChunk(ctx));
+async function startJumping() {
+    button.hidden = true;
+    timeline.hidden = false;
+    audio.startJumping(async current_time =>
+        (await fetch(host + '/next', {
+            method: 'POST',
+            body: JSON.stringify({ current_time })
+        })).json()
+    );
 }
