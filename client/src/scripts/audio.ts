@@ -1,15 +1,16 @@
 export class Audio {
     private readonly ctx: AudioContext;
+    private static RAMPING = 1;
 
     private tracks: AudioBuffer[];
     /** ready to start */
-    private nodes: AudioBufferSourceNode[];
+    private nodes: {node: AudioBufferSourceNode, gain: GainNode}[];
 
     private startAt: number;
     private startTime: number;
 
     private nowIndex: number;
-    private nowPlaying: AudioBufferSourceNode;
+    private nowPlaying: {node: AudioBufferSourceNode, gain: GainNode};
 
     private totalDuration: number;
 
@@ -81,12 +82,15 @@ export class Audio {
 
     private recreateSource(trackid: number) {
         const sourceNode = this.ctx.createBufferSource();
-        sourceNode.connect(this.ctx.destination);
         sourceNode.buffer = this.tracks[trackid];
         sourceNode.onended = () => {
             this.play((trackid + 1) % this.tracks.length, 0);
-        }
-        return sourceNode;
+        };
+        const gainNode = this.ctx.createGain();
+        gainNode.gain.value = 0;
+        gainNode.connect(this.ctx.destination);
+        sourceNode.connect(gainNode);
+        return {node: sourceNode, gain: gainNode};
     }
 
     private play(index: number, from: number) {
@@ -94,10 +98,13 @@ export class Audio {
         [ this.nowPlaying, this.nodes[index] ] = [ this.nodes[index], this.recreateSource(index) ];
         this.startAt = from;
         this.startTime = this.ctx.currentTime;
-        this.nowPlaying.start(0, from);
+        this.nowPlaying.node.start(0, from);
+        const fadeEndTime = this.startTime + Audio.RAMPING;
+        this.nowPlaying.gain.gain.linearRampToValueAtTime(1, fadeEndTime);
         if (oldPlaying) {
-            oldPlaying.onended = () => {};
-            oldPlaying.stop();
+            oldPlaying.node.onended = () => {};
+            oldPlaying.node.stop(fadeEndTime);
+            oldPlaying.gain.gain.linearRampToValueAtTime(0, fadeEndTime);
         }
     }
 
