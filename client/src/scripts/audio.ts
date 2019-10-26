@@ -15,6 +15,13 @@ export class Audio {
         }
     }
 
+    public enqueueBuffer(buff: AudioBuffer): void {
+        this.queue.push(buff);
+        if (this.queue.length == 1) {
+            this.play();
+        }
+    }
+
     private play(): void {
         const source = this.ctx.createBufferSource();
         source.buffer = this.queue[0];
