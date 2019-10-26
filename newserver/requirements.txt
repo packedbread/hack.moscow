@@ -1,6 +1,7 @@
 aiohttp
-aiofile
+aiofiles
 ffmpeg-python
 numpy
 scipy
 tqdm
+scikit-image
