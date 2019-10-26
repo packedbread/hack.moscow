@@ -50,8 +50,8 @@ async function onTrackInput() {
 }
 
 async function startJumping() {
-    button.hidden = true;
-    timeline.hidden = false;
+    button.style.display = 'none';
+    timeline.style.display = 'absolute';
     audio.startJumping(async current_time =>
         (await fetch(host + '/next', {
             method: 'POST',
