@@ -4,6 +4,7 @@ import subprocess
 import logging
 import shutil
 import os
+import random
 
 import algorithms
 
@@ -59,3 +60,6 @@ class ClientStorage:
             logging.debug('Cleaning up...')
             path = os.path.dirname(files[0])
             shutil.rmtree(path, ignore_errors=True)
+
+    def make_next_jump(self, current_time):
+        return random.choice(self.jumps)

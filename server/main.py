@@ -18,6 +18,15 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 logger = logging.getLogger(__name__)
 
 
+def polynomial_hash(arr, p):
+    base = 1
+    ans = 0
+    for i in range(len(arr)):
+        ans += i * base
+        base *= p
+    return ans
+
+
 class PrecalcMediumFFTAlgo:
     def __init__(self, sample_rate, data):
         self.sample_rate = int(sample_rate)
@@ -32,7 +41,9 @@ class PrecalcMediumFFTAlgo:
     def _get_fft_hash(self, from_sample, window_size):
         freq_arr = rfft(self.one_channel[from_sample: from_sample + window_size])
         windowed = util.view_as_blocks(freq_arr, (100, ))
-        arr_hash = 10 * np.max(windowed) + np.sum(windowed)
+        block_sum = np.array(list(map(np.sum, windowed)))
+
+        arr_hash = polynomial_hash(block_sum, 113)
         arr_hash /= 1000
         arr_hash = round(arr_hash, 4)
 
@@ -90,10 +101,10 @@ class NonCommonMaxFrequenceIndexesAlgo:
         self.signal = np.average(data, axis=1)
         self.signal /= np.max(np.abs(self.signal))
 
-    def run(self, window_size=4096, stride=256, n=6, threshold=None):
+    def run(self, window_size=4096, stride=256, n=8, threshold=None):
         print('Starting NonCommonMaxFrequenceIndexesAlgo precalc...', flush=True)
         start_time = time.time()
-        threshold = threshold or 7 * n // 8
+        threshold = threshold or 6 * n // 8
         windows = util.view_as_windows(self.signal, window_shape=(window_size,), step=stride)
         windows = windows * np.hanning(window_size)
 
@@ -127,12 +138,12 @@ class NonCommonMaxFrequenceIndexesAlgo:
             current_ngram = list(current_ngram[1:]) + [index]
             if current_ngram.count(most_common_index) >= threshold:
                 continue
-            ngram_dict[poly_hash(current_ngram)].append(i - n + 1)
+            ngram_dict[poly_hash(current_ngram)].append(i * stride + window_size / 2)
 
         print('All viable edge transfers: ', flush=True)
         for key, value in ngram_dict.items():
             if len(value) > 1:
-                print(key, value)
+                print(key, np.array(value) / self.sample_rate)
 
         edges = []
         for key, value in ngram_dict.items():
