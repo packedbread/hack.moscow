@@ -1,5 +1,6 @@
-import { $ } from './util';
-import { Audio } from './audio';
+import 'babel-polyfill';
+import {$} from './util';
+import {Audio} from './audio';
 
 window.onload = () => {
     input = $('#input');
@@ -14,26 +15,39 @@ const sampleRate = 44100;
 var input: HTMLInputElement;
 var button: HTMLDivElement;
 var timeline: HTMLDivElement;
-
 var audio: Audio;
 
 async function main() {
     input.onchange = onTrackInput;
     input.click();
-    button.innerText = 'Processing...';
 }
 
 async function onTrackInput() {
     if (input.files.length == 0) {
         return;
     }
-    audio = new Audio(new AudioContext({ sampleRate }));
+    button.innerText = 'Processing...';
+    audio = new Audio(new AudioContext({sampleRate}));
     audio.play(await new Response(input.files[0]).arrayBuffer());
-    console.log(input.files[0]);
-    await fetch(host + '/upload', {
-        method: 'POST',
-        body: input.files[0],
-    });
+
+    if (input.files.length == 1) {
+        // OLD VERSION (ONE FILE)
+        console.log(input.files[0]);
+        await fetch(host + '/upload', {
+            method: 'POST',
+            body: input.files[0],
+        });
+    } else {
+        // NEW VERSION (MULTIPLE FILES)
+        let data = new FormData();
+        for (const file of input.files)
+            data.append('files[]', file, file.name);
+        await fetch('/upload', {
+            method: 'POST',
+            body: data
+        });
+    }
+
     const timeOut = 1000;
     (async function recurr() {
         const response = await fetch(host + '/next', {

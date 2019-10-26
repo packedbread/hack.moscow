@@ -1,8 +1,10 @@
 {
   "scripts": {
-    "start": "parcel src/index.html -p 80"
+    "start": "parcel src/index.html -p 80",
+    "watch": "parcel watch src/index.html"
   },
   "dependencies": {
+    "babel-polyfill": "^6.26.0",
     "parcel-bundler": "^1.12.4"
   },
   "devDependencies": {
