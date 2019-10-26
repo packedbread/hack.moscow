@@ -10,7 +10,7 @@ import asyncio
 import ffmpeg
 import time
 import random
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,8 @@ class PrecalcAlgo:
         self.data = np.array(data)
         self.data = np.array([self.data[:, i] / np.max(np.abs(self.data[:, i])) for i in range(self.data.shape[1])]).T
 
-    def _mse(self, a, b):
+    @staticmethod
+    def _mse(a, b):
         return np.sqrt(np.sum(np.power(a - b, 2)))
 
     def _positional_value(self, window_size, first_start, second_start):
@@ -39,12 +40,21 @@ class PrecalcAlgo:
         stride = self.sample_rate
         threshold = 100
         result = []
-        for first_start in tqdm(range(0, self.data.shape[0], stride)):
-            is_accepted = np.array([
-                self._positional_value(window_size, first_start, second_start) < threshold
-                for second_start in range(first_start + stride, self.data.shape[0], stride)
-            ])
-            result.extend([(first_start, first_start + index * stride) for index, value in enumerate(is_accepted) if value])
+        with ThreadPoolExecutor(16) as pool:
+            def iteration(self, first_start):
+                # print(f'Starting iteration {first_start // stride} at {time.time()}', flush=True)
+                # start_time = time.time()
+                is_accepted = np.array([
+                    self._positional_value(window_size, first_start, second_start) < threshold
+                    for second_start in range(first_start + stride, self.data.shape[0], stride)
+                ])
+                part = [(first_start, first_start + index * stride) for index, value in enumerate(is_accepted) if value]
+                # end_time = time.time()
+                # print(f'Finishing iteration {first_start // stride}, done in {int((end_time - start_time) * 1000)}ms', flush=True)
+                return part
+
+            for result_part in pool.map(partial(iteration, self), range(0, self.data.shape[0], stride)):
+                result.extend(result_part)
         return np.array(result, dtype=np.float) / np.float(self.sample_rate)
 
 
@@ -94,7 +104,12 @@ class FileProcessingTask:
         # precalculation
         algo = PrecalcAlgo(sample_rate, data)
         # return results
-        return algo.run()
+        print('Starting main precalc...')
+        start_time = time.time()
+        result = algo.run()
+        end_time = time.time()
+        print(f'Finished main precalc, done in {int((end_time - start_time) * 1000)}ms.')
+        return result
 
 
 class NextJumpAlgo:
@@ -124,6 +139,8 @@ class NextJumpAlgo:
 
     def get_next_jump(self, current_time):
         viable_options = self.result[[True if first > current_time or second > current_time else False for first, second in self.result]]
+        if viable_options.size == 0:
+            return random.choice(self.result)  # that is questionable
 
         def distance(option):
             return abs(option[0] - current_time) + abs(option[1] - current_time)
@@ -157,7 +174,7 @@ async def upload(request):
     start_time = time.time()
     content = await request.content.read()
     end_time = time.time()
-    print(f'Finished file upload, done in {int(end_time - start_time)}ms.', flush=True)
+    print(f'Finished file upload, done in {int((end_time - start_time) * 1000)}ms.', flush=True)
 
     asyncio.ensure_future(spawn_task(content), loop=loop)
     return web.Response(status=200)
