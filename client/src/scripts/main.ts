@@ -5,7 +5,7 @@ import {Graphics} from './graphics/graphics';
 import {WaveformController} from './graphics/waveform_controller';
 import {CaretController} from './graphics/caret_controller';
 import {BackgroundController} from './graphics/background_controller';
-import {useAudio, getSongTime} from './time';
+import {useAudio} from './time';
 
 window.onload = () => {
     input = $('#input');
@@ -78,13 +78,14 @@ async function onTrackInput() {
 }
 
 async function doJump(jump: Jump) {
-    if (jump.from < audio.getTotalTime()) {
+    if (jump.from < audio.getTotalTime() && jump.to > audio.getTotalTime()) {
         [jump.from, jump.to] = [jump.to, jump.from];
     }
     let timeToJump = audio.scheduleJump(jump);
     waveformController.scheduleJump(jump);
     console.log(timeToJump, jump);
     setTimeout(async () => {
+        console.log('requesting');
         doJump(await (await jumpRequest(audio.getTotalTime())).json());
     }, timeToJump);
 }
