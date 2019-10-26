@@ -1,5 +1,6 @@
 from aiohttp import web, hdrs
 from scipy.io import wavfile
+from scipy.fftpack import rfft
 from functools import partial
 import logging
 import os
@@ -15,6 +16,72 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
 
 logger = logging.getLogger(__name__)
+
+
+class PrecalcMediumFFTAlgo:
+    def __init__(self, sample_rate, data):
+        self.sample_rate = int(sample_rate)
+        data = np.array(data)
+        data = np.array([data[:, i] / np.max(np.abs(data[:, i])) for i in range(data.shape[1])]).T
+        self.one_channel = np.average(data, axis=1)
+
+    @staticmethod
+    def _mse(a, b):
+        return np.sqrt(np.sum(np.power(a - b, 2)))
+
+    def _get_fft_hash(self, from_sample, window_size):
+        freq_arr = rfft(self.one_channel[from_sample: from_sample + window_size])
+        windowed = util.view_as_blocks(freq_arr, (100, ))
+        arr_hash = 10 * np.max(windowed) + np.sum(windowed)
+        arr_hash /= 1000
+        arr_hash = round(arr_hash, 4)
+
+        return [arr_hash, from_sample]
+
+    # def _positional_value(self, window_size, first_start, second_start):
+    #     first = self.data[first_start:first_start + window_size]
+    #     second = self.data[second_start:second_start + window_size]
+    #     first_padded = np.zeros((window_size,) + self.data.shape[1:])
+    #     first_padded[:first.shape[0]] = first
+    #     second_padded = np.zeros((window_size,) + self.data.shape[1:])
+    #     second_padded[:second.shape[0]] = second
+    #     return self._mse(first_padded, second_padded)
+
+    def run(self):
+        start_time = time.time()
+        window_size = 1000
+        stride = 64
+        hash_result = defaultdict(lambda: [])
+        result = []
+        with ThreadPoolExecutor(16) as pool:
+            def iteration(first_start):
+                hsh = self._get_fft_hash(first_start, window_size)
+                return hsh, first_start
+
+            def map_append(index_list):
+                res = []
+                for i in range(len(index_list)):
+                    for j in range(i + 1, len(index_list)):
+                        if abs(index_list[j] - index_list[i]) > np.float(self.sample_rate) * 2:
+                            res.append([index_list[i], index_list[j]])
+                return res
+
+            for result_part in pool.map(
+                iteration, range(
+                    len(self.one_channel) // 10,
+                    len(self.one_channel) - window_size - len(self.one_channel) // 10, stride
+                )
+            ):
+                hash_result[result_part[0][0]].append(result_part[0][1])
+
+            for result_part in pool.map(map_append, (item for _, item in hash_result.items())):
+                result.extend(result_part)
+
+        end_time = time.time()
+        print(f'Finished PrecalcMediumFFTAlgo precalc, done in {int((end_time - start_time) * 1000)}ms.', flush=True)
+        logger.error(result)
+
+        return np.array(result, dtype=np.float) / np.float(self.sample_rate)
 
 
 class NonCommonMaxFrequenceIndexesAlgo:
@@ -121,7 +188,7 @@ class FileProcessingTask:
         # load .wav
         sample_rate, data = wavfile.read(wav_filename)
         # precalculation
-        algo = NonCommonMaxFrequenceIndexesAlgo(sample_rate, data)
+        algo = PrecalcMediumFFTAlgo(sample_rate, data)
         # return results
         print('Starting main precalc...')
         start_time = time.time()
