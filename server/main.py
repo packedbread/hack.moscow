@@ -18,6 +18,15 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 logger = logging.getLogger(__name__)
 
 
+def polynomial_hash(arr, p):
+    base = 1
+    ans = 0
+    for i in range(len(arr)):
+        ans += i * base
+        base *= p
+    return ans
+
+
 class PrecalcMediumFFTAlgo:
     def __init__(self, sample_rate, data):
         self.sample_rate = int(sample_rate)
@@ -32,7 +41,9 @@ class PrecalcMediumFFTAlgo:
     def _get_fft_hash(self, from_sample, window_size):
         freq_arr = rfft(self.one_channel[from_sample: from_sample + window_size])
         windowed = util.view_as_blocks(freq_arr, (100, ))
-        arr_hash = 10 * np.max(windowed) + np.sum(windowed)
+        block_sum = np.array(list(map(np.sum, windowed)))
+
+        arr_hash = polynomial_hash(block_sum, 113)
         arr_hash /= 1000
         arr_hash = round(arr_hash, 4)
 
