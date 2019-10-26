@@ -48,8 +48,8 @@ export class WaveformController implements GraphicsController {
     }
 
     init() {
-        // window.addEventListener('resize', this.resizeCanvas);
-        // this.resizeCanvas();
+        window.addEventListener('resize', this.resizeCanvas);
+        this.resizeCanvas();
         // const barsInGraphics = Math.floor(Math.sqrt(this.bars.length));
         // const totalWidth = this.pixelsPerBar * this.bars.length;
         // const radius = this.pixelsPerBar / 2 - this.barPadding;

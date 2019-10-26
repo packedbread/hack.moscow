@@ -56,6 +56,14 @@ export class Audio {
         return now - Math.floor(now / duration) * duration;
     }
 
+    public getTotalTime(): number {
+        let time = 0;
+        for (let i = 0; i != this.nowIndex; ++i) {
+            time += this.tracks[i].duration;
+        }
+        return time += this.getCurrentTime();
+    }
+
     public getTrackDuration() {
         return this.tracks[this.nowIndex].duration;
     }
