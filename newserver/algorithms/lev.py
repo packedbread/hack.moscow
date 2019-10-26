@@ -116,7 +116,7 @@ def RUNLEVA(sample_rate, channels):
                 cnt += 1
         return round(60 * sample_rate / (avg / cnt))
 
-    def GETTACTS(data, pkst, bpm, slid=0):
+    def GETTACTS(data, pkst, bpm, slid = 0):
         tacts = []
         smpl = 60 * sample_rate // bpm
         start = pkst
@@ -125,7 +125,7 @@ def RUNLEVA(sample_rate, channels):
             start -= smpl * 4
         start += smpl * 4
         for i in range(start, len(data), smpl):
-            tacts.append(data[i:(i + smpl)])
+            tacts.append(data[i:(i+smpl)])
         return tacts, start, smpl
 
     def GETTACTSIND(data, start, bpm):
@@ -135,6 +135,27 @@ def RUNLEVA(sample_rate, channels):
             tacts.append(i)
         return tacts
 
+    def GETPEAKSTART(peaks, bpm, peaksneeded):
+        smpl = 60 * sample_rate // bpm
+        smplbt = 60 * sample_rate // (bpm + 5)
+        smpltp = 60 * sample_rate // (bpm - 5)
+        mx = 0
+        ans = 0
+        for i in range(len(peaks)):
+            st = peaks[i]
+            fnd = [False] * peaksneeded
+            for j in range(i + 1, len(peaks)):
+                for k in range(peaksneeded):
+                    if peaks[i] + smpl*k + smplbt < peaks[j] < peaks[i] + smpl*k + smpltp:
+                        fnd[k] = True
+            good = 0
+            for k in range(peaksneeded):
+                good += fnd[k]
+            if good >= mx:
+                ans = i
+                mx = good
+        return ans
+
     def ENERGYTACTS(tacts):
         E = []
         for i in range(0, len(tacts)):
@@ -142,32 +163,66 @@ def RUNLEVA(sample_rate, channels):
             E.append(np.array(e))
         return E
 
+    def ENERGYALLTACTS(tacts, group):
+        E = []
+        for i in range(0, len(tacts), group):
+            cur = 0
+            for j in range(group):
+                if i + j >= len(tacts):
+                    break
+                for k in tacts[i+j]:
+                    cur += k ** 2
+            cur /= group * len(tacts[i])
+            E.append(cur)
+        return E
+
     def GETFFT(l, r):
-        spectrum = np.abs(np.fft.fft(data[l:r], axis=0))
+        spectrum = np.fft.fft(data[l:r])[:(r-l)//2]
         return spectrum
 
     def MSE(a):
-        return (a ** 2).mean()
+        return (a**2).mean()
 
-    def CNTERR(a, b, l, r):
-        # if r + 4*GLSM >= len(data):
+    def CNTERR(a, b):
+        #if r + 4*GLSM >= len(data):
         #    return 1e9
-        # sa = GETFFT(l, l + TACTSIZE*GLSM)
-        # sb = GETFFT(r, r + TACTSIZE*GLSM)
-        # dif = np.abs(sa-sb)
-        return MSE(a - b)
+        #sa = GETFFT(l, l + 4*GLSM)
+        #sb = GETFFT(r, r + 4*GLSM)
+        sa = np.ravel(np.array(a))
+        sb = np.ravel(np.array(b))
+        if len(sa) != len(sb):
+            return 1e9
+        return MSE(sa-sb)
+
+    def CNTSM(a):
+        sa = np.ravel(np.array(a))
+        return MSE(sa)
+        
 
     def SIMILAR(E, thres):
         res = []
         for i in range(0, len(E), 4):
-            if LEVADEBIL and i % 5 == 0:
-                print("sim " + str(i))
             for j in range(i + 4, len(E), 4):
-                err = CNTERR(E[i], E[j], GLST + GLSM * i, GLST + GLSM * j)
+                err = CNTERR(E[i:i+2], E[j:j+2])
+                #err = CNTERR(GLST + GLSM*i, GLST + GLSM*j)
+                #if (err ** (1/2)) < thres * (((CNTSM(E[i:i+2]) + CNTSM(E[j:j+2]))) ** (1/2)):
                 if err < thres:
                     res.append([i, j])
                     res.append([j, i])
         return res
+
+    def DELETENOTTACT(x):
+        a = x[0] // 4
+        b = x[1] // 4
+        return a % 4 != b % 4
+
+    def DELETEDIFEN(x):
+        a = x[0] // 4
+        b = x[1] // 4
+        return False and abs(EALL[a] - EALL[b]) > 0.004
+
+    def DODELETE(x):
+        return DELETENOTTACT(x) or DELETEDIFEN(x)
 
     if LEVADEBIL:
         print("filtering")
@@ -195,30 +250,40 @@ def RUNLEVA(sample_rate, channels):
         print("bpm " + str(BPM))
 
     if LEVADEBIL:
+        print("peakToStart")
+
+    peakToStart = GETPEAKSTART(peaks, BPM, 6)
+
+    if LEVADEBIL:
+        print("filtering")
+
+    filteredInst = FILTERBLYAT(data, 2000)
+
+    if LEVADEBIL:
         print("tacts")
 
-    peakToStart = 1
-    tacts, GLST, GLSM = GETTACTS(data, peaks[peakToStart], BPM)
+    tacts, GLST, GLSM = GETTACTS(filteredInst, peaks[peakToStart], BPM)
     tactsRAW, _, _ = GETTACTS(channels, peaks[peakToStart], BPM)
 
     if LEVADEBIL:
         print("energy tacts")
 
+    EALL = ENERGYALLTACTS(tacts, 4)
     ET = ENERGYTACTS(tacts)
 
-    print("GRAPH")
+    if LEVADEBIL:
+        print("graph")
 
-    GRAPH = SIMILAR(ET, 2000)
+    GRAPHRAW = SIMILAR(ET, 5000)
 
-    def determine(x):
-        a = x[0] // 4
-        b = x[1] // 4
-        return a % 2 != b % 2
+    if LEVADEBIL:
+        print("last touches")
 
-    GRAPH = [x for x in GRAPH if not determine(x)]
-    GRAPH = list(map(lambda x: [x[0] * GLSM + GLST, x[1] * GLSM + GLST], GRAPH))
+    GRAPH = [x for x in GRAPHRAW if not DODELETE(x)]
+
+    GRAPH = list(map(lambda x: [(x[0] * GLSM + GLST) / sample_rate, (x[1] * GLSM + GLST) / sample_rate], GRAPH))
 
     return GRAPH
 
-# sample_rate, channels = wavfile.read("do.wav")
-# print(RUNLEVA(sample_rate, channels))
+#sample_rate, channels = wavfile.read("do.wav")
+#print(RUNLEVA(sample_rate, channels))
