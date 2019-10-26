@@ -12,6 +12,8 @@ window.onload = () => {
     button = $('#button');
     timeline = $('#timeline');
     button.onclick = main;
+    $('#reroll').onclick = reroll;
+    $('#skip').onclick = seek;
 };
 
 const host = '';
@@ -28,6 +30,8 @@ var waveformController: WaveformController;
 var graphics: Graphics;
 
 var requestTimeout: number;
+var audioTimeout: number;
+var lastJump: Jump;
 
 function main() {
     input.onchange = onTrackInput;
@@ -86,10 +90,12 @@ function doJump(jump: Jump) {
     } else if (jump.from <= audio.getTotalTime() || jump.to >= audio.getTotalTime()) {
         [jump.from, jump.to] = [Math.min(jump.from, jump.to), Math.max(jump.from, jump.to)];
     }
-    let timeToJump = audio.scheduleJump(jump);
+    lastJump = jump;
+    let timeToJump: number;
+    [timeToJump, audioTimeout] = audio.scheduleJump(jump);
     waveformController.scheduleJump(jump);
     console.log(timeToJump, jump);
-    requestTimeout = setTimeout(async () => {
+    requestTimeout = setTimeout(() => {
         console.log('requesting');
         requestJump();
     }, timeToJump);
@@ -100,8 +106,21 @@ async function requestJump() {
 }
 
 function reroll() {
+    clearTimeout(audioTimeout);
     clearTimeout(requestTimeout);
     requestJump();
+}
+
+function seek() {
+    let dest = lastJump.from - 5;
+    if (dest < 0) {
+        dest += audio.getTotalDuration();
+    }
+    console.log('jumping to ', dest);
+    audio.jumpTo(dest);
+    clearTimeout(audioTimeout);
+    clearTimeout(requestTimeout);
+    doJump(lastJump);
 }
 
 function jumpRequest(time: number) {

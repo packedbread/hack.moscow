@@ -53,8 +53,8 @@ export class Audio {
         if (diff < 0) {
             diff += this.totalDuration * 1000;
         }
-        setTimeout(() => this.jumpTo(jump.to), diff);
-        return diff;
+        let timeout = setTimeout(() => this.jumpTo(jump.to), diff);
+        return [diff, timeout];
     }
 
     public getCurrentTime(): number {
@@ -73,6 +73,10 @@ export class Audio {
 
     public getTrackDuration() {
         return this.tracks[this.nowIndex].duration;
+    }
+
+    public getTotalDuration() {
+        return this.totalDuration;
     }
 
     private recreateSource(trackid: number) {
