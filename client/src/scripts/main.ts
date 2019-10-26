@@ -68,6 +68,7 @@ async function onTrackInput() {
             console.log('ok', json);
             if (json.ready) {
                 button.style.display = 'none';
+                timeline.style.display = 'block';
                 return doJump(json);
             } else if (json.status === 'merging') {
                 button.innerText = 'Merging...';
