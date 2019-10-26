@@ -59,14 +59,12 @@ export class WaveformController implements GraphicsController {
     }
 
     public update(_: number) {
-        console.log('update');
         const ratio = songRatio(getSongTime());
         const graphicsWidth = this.bars.length * this.pixelsPerBar;
         this.barGraphics.x = this.canvas.width * 0.5 - graphicsWidth * ratio;
     }
 
     public render() {
-        console.log('render');
         this.pixiApp.render();
     }
 }
