@@ -135,9 +135,20 @@ class NextJumpAlgo:
 routes = web.RouteTableDef()
 
 
+DEFAULT_TEXT = '''
+####### ####### ####### ######     #     #  #####  ### 
+#       #       #       #     #    #     # #     # ### 
+#       #       #       #     #    #     # #       ### 
+#####   #####   #####   #     #    #     #  #####   #  
+#       #       #       #     #    #     #       #     
+#       #       #       #     #    #     # #     # ### 
+#       ####### ####### ######      #####   #####  ###
+'''
+
+
 @routes.get('/')
 async def index(_):
-    return web.Response(text='FEED US!')
+    return web.Response(text=DEFAULT_TEXT)
 
 
 @routes.post('/upload')
