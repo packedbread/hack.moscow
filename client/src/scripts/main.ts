@@ -81,6 +81,8 @@ async function onTrackInput() {
 async function doJump(jump: Jump) {
     if (jump.from < audio.getTotalTime() && jump.to > audio.getTotalTime()) {
         [jump.from, jump.to] = [jump.to, jump.from];
+    } else if (jump.from <= audio.getTotalTime() || jump.to >= audio.getTotalTime()) {
+        [jump.from, jump.to] = [Math.min(jump.from, jump.to), Math.max(jump.from, jump.to)];
     }
     let timeToJump = audio.scheduleJump(jump);
     waveformController.scheduleJump(jump);

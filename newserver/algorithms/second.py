@@ -22,7 +22,7 @@ class NonCommonMaxFrequenceIndexesAlgoJumpDetector(AbstractJumpDetector):
 
         print('Beginning window fft...', flush=True)
         spectrum = rfft(windows)
-        
+
         frequencies = np.fft.fftfreq(window_size)[:window_size // 2] * self.sample_rate
         print('Finished window fft.', flush=True)
 
