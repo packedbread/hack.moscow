@@ -85,7 +85,7 @@ async def get_next(request):
     }
 
     if client.status == 'ready':
-        from_, to = client.make_next_jump(data['time'])
+        from_, to = client.next_jump(data['time'])
         result['from'], result['to'] = from_, to
 
     return web.json_response(data=result)
