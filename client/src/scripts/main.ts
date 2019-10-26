@@ -27,7 +27,7 @@ var caretController: CaretController;
 var waveformController: WaveformController;
 var graphics: Graphics;
 
-async function main() {
+function main() {
     input.onchange = onTrackInput;
     input.click();
 }
@@ -46,8 +46,10 @@ async function onTrackInput() {
         waveformController = new WaveformController(sampleRate)
     );
     caretController.setBpm(bpm);
-    await audio.play(await new Response(input.files[0]).arrayBuffer());
-    waveformController.freezeSignal(audio.getWaveform());
+    await audio.init(await Promise.all(
+        [...input.files].map(track => new Response(track).arrayBuffer())
+    ));
+    waveformController.freezeSignals(audio.getWaveforms());
     graphics.startLooping();
 
     if (input.files.length == 1) {
