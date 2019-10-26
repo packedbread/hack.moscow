@@ -1,19 +1,20 @@
 import { $ } from '../util';
 
 export class WaveformController {
-    private static readonly pxPerBar = 5;
-    private static readonly pxPerSec = 30;
-
     private readonly sampleRate: number;
-    private readonly splPerBar: number;
+    private readonly pixelsPerSec: number;
+    private readonly secondsPerBar = 0.1;
+    private readonly samplesPerBar: number;
+    private readonly pixelsPerBar = 10;
 
-    private readonly waveform: HTMLCanvasElement;
+    private readonly canvas: HTMLCanvasElement;
 
     public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
-        this.splPerBar = sampleRate * WaveformController.pxPerBar / WaveformController.pxPerSec;
+        this.samplesPerBar = this.secondsPerBar * this.sampleRate;
+        this.pixelsPerSec = this.pixelsPerBar / this.secondsPerBar;
 
-        this.waveform = $('#waveform');
+        this.canvas = $('#waveform');
     }
 
     public addChunk(chunk: Float32Array) {
