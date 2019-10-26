@@ -4,3 +4,4 @@ tqdm
 numpy
 tempfile
 ffmpeg-python
+scikit-image

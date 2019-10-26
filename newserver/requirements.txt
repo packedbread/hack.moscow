@@ -4,3 +4,4 @@ ffmpeg-python
 numpy
 scipy
 tqdm
+scikit-image
