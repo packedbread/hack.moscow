@@ -1,2 +1,6 @@
 aiohttp
-gunicorn
+scipy
+tqdm
+numpy
+tempfile
+ffmpeg-python
