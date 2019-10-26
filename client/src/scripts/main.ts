@@ -5,8 +5,15 @@ import { WaveformController } from './graphics/waveform_controller';
 
 window.onload = main;
 
+const url = 'http://box-server.herokuapp.com/from1to1';
 const sampleRate = 44100;
 const bpm = 120;
+
+async function fetchChunk() {
+    let res = await fetch(url);
+    let buff = await res.arrayBuffer();
+    return new Float32Array(buff);
+}
 
 function main() {
     const audio = new Audio(new AudioContext({ sampleRate }));
