@@ -14,7 +14,7 @@ window.onload = () => {
     button.onclick = main;
 };
 
-const host = 'http://10.0.0.103:5000';
+const host = 'http://0.0.0.0:5000';
 const sampleRate = 44100;
 const bpm = 128;
 
