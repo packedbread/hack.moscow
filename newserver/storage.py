@@ -65,6 +65,7 @@ class ClientStorage:
 
             logging.debug('Postprocessing jumps...')
             self.jumps = np.array(await self.loop.run_in_executor(self.pool, self.postprocess_jumps))
+            self.jumps.sort()
         finally:
             logging.debug('Cleaning up...')
             path = os.path.dirname(files[0])
@@ -95,10 +96,11 @@ class ClientStorage:
             for items in partition:
                 left_items = items.difference(jumps_to_remove)
                 if len(left_items) > limit:
-                    jumps_to_remove.update(random.choices(left_items, k=len(left_items) - limit))
-        res = self.jumps[[i for i in range(self.jumps.shape[0]) if i not in jumps_to_remove]]
-        res.sort()
-        return res
+                    jumps_to_remove.update(random.choices(list(left_items), k=len(left_items) - limit))
+        for jump in self.jumps:
+            if abs(jump[0] - jump[1]) < 2.0:
+                jumps_to_remove.add(jump)
+        return self.jumps[[i for i in range(self.jumps.shape[0]) if i not in jumps_to_remove]]
 
     def next_jump(self, current_time):
         first = 0
