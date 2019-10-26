@@ -21,7 +21,6 @@ const bpm = 128;
 var input: HTMLInputElement;
 var button: HTMLDivElement;
 var timeline: HTMLDivElement;
-
 var audio: Audio;
 
 var caretController: CaretController;
@@ -31,7 +30,6 @@ var graphics: Graphics;
 async function main() {
     input.onchange = onTrackInput;
     input.click();
-    button.innerText = 'Processing...';
 }
 
 async function onTrackInput() {
@@ -51,11 +49,25 @@ async function onTrackInput() {
     await audio.play(await new Response(input.files[0]).arrayBuffer());
     waveformController.freezeSignal(audio.getWaveform());
     graphics.startLooping();
-    console.log(input.files[0]);
-    await fetch(host + '/upload', {
-        method: 'POST',
-        body: input.files[0],
-    });
+
+    if (input.files.length == 1) {
+        // OLD VERSION (ONE FILE)
+        console.log(input.files[0]);
+        await fetch(host + '/upload', {
+            method: 'POST',
+            body: input.files[0],
+        });
+    } else {
+        // NEW VERSION (MULTIPLE FILES)
+        let data = new FormData();
+        for (const file of input.files)
+            data.append('files[]', file, file.name);
+        await fetch('/upload', {
+            method: 'POST',
+            body: data
+        });
+    }
+
     const timeOut = 1000;
     (async function recurr() {
         const response = await fetch(host + '/next', {
