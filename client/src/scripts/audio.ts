@@ -45,7 +45,9 @@ export class Audio {
 
     public scheduleJump(jump: Jump) {
         const now = this.getCurrentTime();
-        setTimeout(() => this.jumpTo(jump.to), (this.localize(jump.from) - now) * 1000);
+        const diff = (this.localize(jump.from) - now) * 1000;
+        setTimeout(() => this.jumpTo(jump.to), diff);
+        return diff;
     }
 
     public getCurrentTime(): number {

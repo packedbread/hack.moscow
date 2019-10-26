@@ -82,9 +82,9 @@ async function onTrackInput() {
 }
 
 async function doJump(jump: Jump) {
-    audio.scheduleJump(jump);
+    let timeToJump = audio.scheduleJump(jump);
     waveformController.scheduleJump(jump);
-    doJump(await (await jumpRequest()).json());
+    setInterval(async () => doJump(await (await jumpRequest()).json()), timeToJump);
 }
 
 function jumpRequest() {
