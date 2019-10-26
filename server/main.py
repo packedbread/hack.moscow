@@ -38,7 +38,7 @@ class PrecalcAlgo:
     def run(self):
         window_size = 2 * self.sample_rate
         stride = self.sample_rate
-        threshold = 100
+        threshold = 200
         result = []
         with ThreadPoolExecutor(16) as pool:
             def iteration(self, first_start):
@@ -53,7 +53,7 @@ class PrecalcAlgo:
                 # print(f'Finishing iteration {first_start // stride}, done in {int((end_time - start_time) * 1000)}ms', flush=True)
                 return part
 
-            for result_part in pool.map(partial(iteration, self), range(0, self.data.shape[0], stride)):
+            for result_part in pool.map(partial(iteration, self), range(self.data.shape[0] // 8, self.data.shape[0], 4 * stride)):
                 result.extend(result_part)
         return np.array(result, dtype=np.float) / np.float(self.sample_rate)
 
@@ -180,12 +180,18 @@ async def upload(request):
     return web.Response(status=200)
 
 
+@routes.route('OPTIONS', '/upload')
+async def upload_options(_):
+    return web.Response(status=200)
+
+
 @routes.post('/next')
 async def get_next(request):
     current_time = (await request.json())['current_time']
     if task_result_storage.is_ready:
         algo = NextJumpAlgo(task_result_storage.result)
         next_jump = algo.get_next_jump(current_time)
+        print(next_jump)
         return web.json_response(data={'from': next_jump[0], 'to': next_jump[1]})
     else:
         return web.Response(status=422)
@@ -198,7 +204,8 @@ logging.basicConfig(level=logging.DEBUG)
 
 async def on_prepare(_, response):
     response.headers[hdrs.ACCESS_CONTROL_ALLOW_ORIGIN] = '*'
-    response.headers[hdrs.ACCESS_CONTROL_ALLOW_METHODS] = 'OPTIONS,GET,POST'
+    response.headers[hdrs.ACCESS_CONTROL_ALLOW_METHODS] = 'OPTIONS, GET, POST'
+    response.headers[hdrs.ACCESS_CONTROL_ALLOW_HEADERS] = 'Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With'
 
 app.on_response_prepare.append(on_prepare)
 
