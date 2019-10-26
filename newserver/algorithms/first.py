@@ -22,42 +22,42 @@ class FirstJumpDetector(AbstractJumpDetector):
     def _mse(a, b):
         return np.sqrt(np.sum(np.power(a - b, 2)))
 
+    @staticmethod
+    def calc_hash(arr):
+        ans = 0
+        for i in range(len(arr)):
+            ans += arr[i]
+
+        return ans
+
     def _get_fft_hash(self, from_sample, window_size):
         freq_arr = rfft(self.one_channel[from_sample: from_sample + window_size])
-        windowed = util.view_as_blocks(freq_arr, (100,))
-        arr_hash = 10 * np.max(windowed) + np.sum(windowed)
-        arr_hash /= 1000
+        windowed = util.view_as_blocks(freq_arr, (40,))
+        block_sum = np.array(list(map(np.sum, windowed)))
+
+        arr_hash = self.calc_hash(block_sum)
         arr_hash = round(arr_hash, 4)
 
-        return [arr_hash, from_sample]
-
-    # def _positional_value(self, window_size, first_start, second_start):
-    #     first = self.data[first_start:first_start + window_size]
-    #     second = self.data[second_start:second_start + window_size]
-    #     first_padded = np.zeros((window_size,) + self.data.shape[1:])
-    #     first_padded[:first.shape[0]] = first
-    #     second_padded = np.zeros((window_size,) + self.data.shape[1:])
-    #     second_padded[:second.shape[0]] = second
-    #     return self._mse(first_padded, second_padded)
+        return [arr_hash, from_sample + window_size / 2]
 
     def run(self):
         start_time = time.time()
-        window_size = 1000
-        stride = 64
-        hash_result = defaultdict(lambda: [])
+        window_size = 44000
+        stride = 1000
+        hash_result = []
         result = []
         with ThreadPoolExecutor(16) as pool:
             def iteration(first_start):
                 hsh = self._get_fft_hash(first_start, window_size)
                 return hsh, first_start
 
-            def map_append(index_list):
-                res = []
-                for i in range(len(index_list)):
-                    for j in range(i + 1, len(index_list)):
-                        if abs(index_list[j] - index_list[i]) > np.float(self.sample_rate) * 2:
-                            res.append([index_list[i], index_list[j]])
-                return res
+            # def map_append(index_list):
+            #     res = []
+            #     for i in range(len(index_list)):
+            #         for j in range(i + 1, len(index_list)):
+            #             if abs(index_list[j] - index_list[i]) > np.float(self.sample_rate) * 2:
+            #                 res.append([index_list[i], index_list[j]])
+            #     return res
 
             for result_part in pool.map(
                     iteration, range(
@@ -65,13 +65,19 @@ class FirstJumpDetector(AbstractJumpDetector):
                         len(self.one_channel) - window_size - len(self.one_channel) // 10, stride
                     )
             ):
-                hash_result[result_part[0][0]].append(result_part[0][1])
+                hash_result.append(result_part[0])
 
-            for result_part in pool.map(map_append, (item for _, item in hash_result.items())):
-                result.extend(result_part)
+        hash_result.sort()
+        max_hash = hash_result[-1][0]
+        for i in range(len(hash_result) - 1):
+            if hash_result[i + 1][0] - hash_result[i][0] < max_hash / 1000000:
+                result.append([hash_result[i][1], hash_result[i + 1][1]])
 
         end_time = time.time()
         print(f'Finished PrecalcMediumFFTAlgo precalc, done in {int((end_time - start_time) * 1000)}ms.', flush=True)
-        logger.error(result)
+        logger.critical(hash_result)
+        logger.critical(len(result))
+        print(hash_result, flush=True)
+        print(len(result), flush=True)
 
         return np.array(result, dtype=np.float) / np.float(self.sample_rate)
