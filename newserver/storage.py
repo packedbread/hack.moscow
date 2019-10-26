@@ -4,6 +4,7 @@ import subprocess
 import asyncio
 import logging
 import os
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ class ClientStorage:
     def __init__(self):
         self.uid = str(uuid4())
         self.clients[self.uid] = self
+        self.jumps = [[0, 1]]
 
     @staticmethod
     def transcode(filepath):
@@ -59,3 +61,6 @@ class ClientStorage:
         #######################################
 
         return 123
+
+    def make_next_jump(self):
+        return random.choice(self.jumps)
