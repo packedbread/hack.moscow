@@ -70,24 +70,24 @@ async function onTrackInput() {
 
     const timeOut = 1000;
     (async function recurr() {
-        const response = await fetch(host + '/next', {
-            method: 'POST',
-            body: JSON.stringify({ current_time: 0 })
-        });
-        console.log(response);
+        const response = await jumpRequest();
         if (response.ok) {
-            startJumping();
+            doJump(await response.json());
         } else {
             setTimeout(recurr, timeOut);
         }
     })();
 }
 
-async function startJumping() {
-    audio.startJumping(async current_time =>
-        (await fetch(host + '/next', {
-            method: 'POST',
-            body: JSON.stringify({ current_time })
-        })).json()
-    );
+async function doJump(jump: Jump) {
+    audio.scheduleJump(jump);
+    waveformController.scheduleJump(jump);
+    doJump(await (await jumpRequest()).json());
+}
+
+function jumpRequest() {
+    return fetch(host + '/next', {
+        method: 'POST',
+        body: JSON.stringify({ current_time: 0 })
+    });
 }

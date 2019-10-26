@@ -23,7 +23,8 @@ export class WaveformController implements GraphicsController {
         this.resizeCanvas = this.resizeCanvas.bind(this);
         this.pixiApp = new PIXI.Application({
             view: this.canvas,
-            antialias: true
+            antialias: true,
+            transparent: true
         });
     }
 
@@ -65,6 +66,10 @@ export class WaveformController implements GraphicsController {
             bars.endFill();
             this.pixiApp.stage.addChild(bars);
         }
+    }
+
+    public scheduleJump(jump: Jump) {
+        // TODO
     }
 
     public update(_: number) {
