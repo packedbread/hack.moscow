@@ -8,11 +8,12 @@ export class Graphics {
 
     public startLooping() {
         this.controllers.forEach(controller => controller.init());
-        requestAnimationFrame(this.loop);
+        this.loop(0);
     }
 
     private loop(time: number) {
         this.controllers.forEach(controller => controller.update(time));
         this.controllers.forEach(controller => controller.render());
+        requestAnimationFrame(this.loop);
     }
 }

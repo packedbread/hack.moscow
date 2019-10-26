@@ -1,19 +1,9 @@
 export class CaretController implements GraphicsController {
-    bpm: number;
-
-    constructor(bpm: number) {
-        this.bpm = bpm;
+    public setBpm(bpm: number) {
+        document.body.style.setProperty('--bpm', bpm.toString());
     }
 
-    public init(): void {
-        document.body.style.setProperty('--bpm', this.bpm.toString());
-    }
-    
-    public update(delta: number): void {
-        //
-    }
-
-    public render(): void {
-        //
-    }
+    public init(): void {}
+    public update(delta: number): void {}
+    public render(): void {}
 }
