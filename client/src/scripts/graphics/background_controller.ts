@@ -1,15 +1,14 @@
 import { $ } from '../util';
 
-export class BackgroundController {
+export class BackgroundController implements GraphicsController {
     private readonly background: HTMLCanvasElement;
 
     public constructor() {
         this.background = $('#background');
-        this.whenSegmentEnds = this.whenSegmentEnds.bind(this);
     }
 
-    public whenSegmentEnds() {
-        // TODO transmission animation
+    public init() {
+        // TODO
     }
 
     public update(time: number) {
