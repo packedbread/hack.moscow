@@ -62,5 +62,5 @@ class ClientStorage:
 
         return 123
 
-    def make_next_jump(self):
+    def make_next_jump(self, current_time):
         return random.choice(self.jumps)
