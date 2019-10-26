@@ -1,9 +1,7 @@
 from aiohttp import web, hdrs
-
-
+import wave
 import logging
 import os
-
 
 logger = logging.getLogger(__name__)
 
@@ -13,11 +11,8 @@ def leo_algo(sss):
 
 
 def leo_answer(t_from, t_to):
-
-    with open("./tron.wav", "rb") as input_file:
-        data = input_file.read()
-
-    return data[:8820000]
+    wav = wave.open('tron.wav', 'rb')
+    return wav.readframes(wav.getframerate() * 5)
 
 
 async def upload_handler(request):
@@ -38,14 +33,21 @@ async def main_page_handler(request):
     return web.Response(status=200)
 
 
+async def audio(_):
+    return web.FileResponse('./tron.wav')
+
+
 async def on_prepare(_, response):
     response.headers[hdrs.ACCESS_CONTROL_ALLOW_ORIGIN] = '*'
 
 
 app = web.Application()
 app.on_response_prepare.append(on_prepare)
-app.add_routes([web.post('/upload', upload_handler),
-                web.get(r'/from{from}to{to}', response_handler),
-                web.get('/', main_page_handler)])
+app.add_routes([
+    web.get('/audio', audio),
+    web.post('/upload', upload_handler),
+    web.get('/from{from}to{to}', response_handler),
+    web.get('/', main_page_handler)
+])
 
 web.run_app(app, port=os.getenv('PORT', 5000))
