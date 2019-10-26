@@ -6,7 +6,7 @@ export class CaretController implements GraphicsController {
     }
 
     public init(): void {
-        document.documentElement.style
+        document.body.style.setProperty('--bpm', this.bpm.toString());
     }
     
     public update(delta: number): void {

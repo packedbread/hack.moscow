@@ -1,36 +1,18 @@
-import { BackgroundController } from './background_controller';
-import { WaveformController } from './waveform_controller';
-
-export type GraphicsOptions = {
-    bpm: number;
-    background: BackgroundController;
-    waveform: WaveformController;
-}
-
 export class Graphics {
-    private readonly bpm: number;
-    private readonly background: BackgroundController;
-    private readonly waveform: WaveformController;
+    private readonly controllers: GraphicsController[];
 
-    public constructor({ bpm, background, waveform }: GraphicsOptions) {
-        this.bpm = bpm;
-
-        this.background = background;
-        this.waveform = waveform;
-
+    public constructor(...controllers: GraphicsController[]) {
+        this.controllers = controllers;
         this.loop = this.loop.bind(this);
     }
 
     public startLooping() {
-        document.body.style.setProperty('--bpm', this.bpm.toString());
+        this.controllers.forEach(controller => controller.init());
         requestAnimationFrame(this.loop);
     }
 
     private loop(time: number) {
-        this.background.update(time);
-        this.waveform.update(time);
-
-        this.background.render();
-        this.waveform.render();
+        this.controllers.forEach(controller => controller.update(time));
+        this.controllers.forEach(controller => controller.render());
     }
 }
