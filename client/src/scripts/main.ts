@@ -27,6 +27,8 @@ var caretController: CaretController;
 var waveformController: WaveformController;
 var graphics: Graphics;
 
+var requestTimeout: number;
+
 function main() {
     input.onchange = onTrackInput;
     input.click();
@@ -77,7 +79,7 @@ async function onTrackInput() {
     })();
 }
 
-async function doJump(jump: Jump) {
+function doJump(jump: Jump) {
     if (jump.from < audio.getTotalTime() && jump.to > audio.getTotalTime()) {
         [jump.from, jump.to] = [jump.to, jump.from];
     } else if (jump.from <= audio.getTotalTime() || jump.to >= audio.getTotalTime()) {
@@ -86,10 +88,19 @@ async function doJump(jump: Jump) {
     let timeToJump = audio.scheduleJump(jump);
     waveformController.scheduleJump(jump);
     console.log(timeToJump, jump);
-    setTimeout(async () => {
+    requestTimeout = setTimeout(async () => {
         console.log('requesting');
-        doJump(await (await jumpRequest(audio.getTotalTime())).json());
+        requestJump();
     }, timeToJump);
+}
+
+async function requestJump() {
+    doJump(await (await jumpRequest(audio.getTotalTime())).json());
+}
+
+function reroll() {
+    clearTimeout(requestTimeout);
+    requestJump();
 }
 
 function jumpRequest(time: number) {
