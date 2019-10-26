@@ -1,75 +1,94 @@
-export type Jump = { from: number, to: number, trackid: number };
-
-export type Fetcher = (time: number) => Promise<Jump>;
-
 export class Audio {
     private readonly ctx: AudioContext;
 
-    private track: AudioBuffer;
-    private lastNode: AudioBufferSourceNode;
+    private tracks: AudioBuffer[];
+    /** ready to start */
+    private nodes: AudioBufferSourceNode[];
 
     private startAt: number;
     private startTime: number;
 
+    private nowIndex: number;
+    private nowPlaying: AudioBufferSourceNode;
+
     public constructor(ctx: AudioContext) {
         this.ctx = ctx;
+        this.tracks = [];
+        this.nodes = [];
     }
 
-    public async play(track: ArrayBuffer): Promise<void> {
-        this.track = await this.ctx.decodeAudioData(track);
-        this.startAt = 0;
-        this.startTime = this.ctx.currentTime;
-        this.recreateSource(0).start();
-    }
-
-    public getWaveform() {
-        return this.track.getChannelData(0);
-    }
-
-    public async startJumping(fetcher: Fetcher): Promise<void> {
-        setInterval(() => console.log(this.getCurrentTime()), 1000);
-        while (true) {
-            let { from, to, trackid } = await this.getJump(fetcher);
-            await this.wait((from - this.getCurrentTime()) * 1000);
-            const oldNode = this.lastNode;
-            this.recreateSource(trackid).start(0, to);
-            oldNode.stop();
-            this.startTime = this.ctx.currentTime;
-            this.startAt = to;
+    public async init(tracks: ArrayBuffer[]): Promise<void> {
+        this.nodes.length = this.tracks.length = tracks.length;
+        for (let i = 0; i != tracks.length; ++i) {
+            this.tracks[i] = await this.ctx.decodeAudioData(tracks[i]);
+            this.nodes[i] = this.recreateSource(i);
         }
+        this.jumpTo(0);
+        setInterval(() => console.log(this.getCurrentTime()), 1000);
+    }
+
+    public getWaveforms() {
+        return this.tracks.map(buffer => buffer.getChannelData(0));
+    }
+
+    jumpTo(time: number) {
+        for (this.nowIndex = 0; this.nowIndex != this.tracks.length; ++this.nowIndex) {
+            let duration = this.tracks[this.nowIndex].duration;
+            if (time < duration) {
+                break;
+            } else {
+                time -= duration;
+            }
+        }
+        this.play(this.nowIndex, time);
+    }
+
+    public scheduleJump(jump: Jump) {
+        const now = this.getCurrentTime();
+        const diff = (this.localize(jump.from) - now) * 1000;
+        setTimeout(() => this.jumpTo(jump.to), diff);
+        return diff;
     }
 
     public getCurrentTime(): number {
         const now = this.startAt + (this.ctx.currentTime - this.startTime);
-        return now - Math.floor(now / this.track.duration) * this.track.duration;
+        const duration = this.tracks[this.nowIndex].duration;
+        return now - Math.floor(now / duration) * duration;
     }
 
     public getTrackDuration() {
-        return this.track.duration;
+        return this.tracks[this.nowIndex].duration;
     }
 
     private recreateSource(trackid: number) {
         const sourceNode = this.ctx.createBufferSource();
         sourceNode.connect(this.ctx.destination);
-        sourceNode.loop = true;
-        sourceNode.buffer = this.track;
-        return this.lastNode = sourceNode;
+        sourceNode.buffer = this.tracks[trackid];
+        sourceNode.onended = () => {
+            this.play((trackid + 1) % this.tracks.length, 0);
+        }
+        return sourceNode;
     }
 
-    private async getJump(fetcher: Fetcher, retry = 2): Promise<Jump> {
-        let { from, to, trackid } = await fetcher(this.getCurrentTime());
-        console.log(from, to);
-        if (from < this.getCurrentTime()) {
-            [ to, from ] = [ from, to ];
+    private play(index: number, from: number) {
+        const oldPlaying = this.nowPlaying;
+        [ this.nowPlaying, this.nodes[index] ] = [ this.nodes[index], this.recreateSource(index) ];
+        this.startAt = from;
+        this.startTime = this.ctx.currentTime;
+        this.nowPlaying.start(0, from);
+        if (oldPlaying) {
+            oldPlaying.onended = () => {};
+            oldPlaying.stop();
         }
-        if (from - this.getCurrentTime() > 30 && retry > 0) {
-            return this.getJump(fetcher, retry - 1);
-        }
-        return { from, to, trackid };
     }
 
-    private wait(millis: number) {
-        console.log(`waiting ${millis} millis`);
-        return new Promise(resolve => setTimeout(resolve, millis));
+    private localize(time: number) {
+        for (let i = 0; i != this.tracks.length; ++i) {
+            if (this.tracks[i].duration > time) {
+                return time;
+            } else {
+                time -= this.tracks[i].duration;
+            }
+        }
     }
 }

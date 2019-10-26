@@ -27,7 +27,7 @@ var caretController: CaretController;
 var waveformController: WaveformController;
 var graphics: Graphics;
 
-async function main() {
+function main() {
     input.onchange = onTrackInput;
     input.click();
 }
@@ -46,8 +46,10 @@ async function onTrackInput() {
         waveformController = new WaveformController(sampleRate)
     );
     caretController.setBpm(bpm);
-    await audio.play(await new Response(input.files[0]).arrayBuffer());
-    waveformController.freezeSignal(audio.getWaveform());
+    await audio.init(await Promise.all(
+        [...input.files].map(track => new Response(track).arrayBuffer())
+    ));
+    waveformController.freezeSignals(audio.getWaveforms());
     graphics.startLooping();
 
     if (input.files.length == 1) {
@@ -70,24 +72,24 @@ async function onTrackInput() {
 
     const timeOut = 1000;
     (async function recurr() {
-        const response = await fetch(host + '/next', {
-            method: 'POST',
-            body: JSON.stringify({ current_time: 0 })
-        });
-        console.log(response);
+        const response = await jumpRequest();
         if (response.ok) {
-            startJumping();
+            doJump(await response.json());
         } else {
             setTimeout(recurr, timeOut);
         }
     })();
 }
 
-async function startJumping() {
-    audio.startJumping(async current_time =>
-        (await fetch(host + '/next', {
-            method: 'POST',
-            body: JSON.stringify({ current_time })
-        })).json()
-    );
+async function doJump(jump: Jump) {
+    let timeToJump = audio.scheduleJump(jump);
+    waveformController.scheduleJump(jump);
+    setInterval(async () => doJump(await (await jumpRequest()).json()), timeToJump);
+}
+
+function jumpRequest() {
+    return fetch(host + '/next', {
+        method: 'POST',
+        body: JSON.stringify({ current_time: 0 })
+    });
 }
