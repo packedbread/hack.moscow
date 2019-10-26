@@ -1,54 +1,81 @@
-import {Audio} from './audio';
-import {Graphics} from './graphics/graphics';
-import {BackgroundController} from './graphics/background_controller';
-import {WaveformController} from './graphics/waveform_controller';
-import {$} from './util';
+import 'babel-polyfill';
+import { $ } from './util';
+import { Audio } from './audio';
+import { Graphics } from './graphics/graphics';
+import { WaveformController } from './graphics/waveform_controller';
+import { CaretController } from './graphics/caret_controller';
+import { BackgroundController } from './graphics/background_controller';
+import { useAudio } from './time';
 
 window.onload = () => {
-    $('#button').onclick = main;
+    input = $('#input');
+    button = $('#button');
+    timeline = $('#timeline');
+    button.onclick = main;
 };
 
 const host = 'http://10.0.0.103:5000';
-const url = 'http://localhost:5000/audio';
 const sampleRate = 44100;
-const bpm = 120;
+const bpm = 128;
 
-async function fetchChunk(ctx: AudioContext) {
-    let res = await fetch(url);
-    if (res.status !== 200) {
-        console.log('Fetch error:', await res.text());
-        return null;
-    }
-    let buff = await res.arrayBuffer();
-    return ctx.decodeAudioData(buff);
-}
+var input: HTMLInputElement;
+var button: HTMLDivElement;
+var timeline: HTMLDivElement;
+
+var audio: Audio;
+
+var caretController: CaretController;
+var waveformController: WaveformController;
+var graphics: Graphics;
 
 async function main() {
-    let resolve = null;
-    let promise = new Promise(r => resolve = r);
-    $('#input').addEventListener('change', resolve, false);
-    $('#input').click();
-    $('#button').innerText = 'Processing...';
-    const ctx = new AudioContext({sampleRate});
-    await promise;
-    let files = $('#input').files;
+    input.onchange = onTrackInput;
+    input.click();
+    button.innerText = 'Processing...';
+}
 
-    // let buff = await ctx.decodeAudioData(await files[0].arrayBuffer());
-    // console.log(buff);
-
+async function onTrackInput() {
+    if (input.files.length == 0) {
+        return;
+    }
+    button.style.display = 'none';
+    timeline.style.display = 'block';
+    audio = new Audio(new AudioContext({ sampleRate }));
+    useAudio(audio);
+    graphics = new Graphics(
+        caretController = new CaretController(),
+        new BackgroundController(),
+        waveformController = new WaveformController(sampleRate)
+    );
+    caretController.setBpm(bpm);
+    await audio.play(await new Response(input.files[0]).arrayBuffer());
+    waveformController.freezeSignal(audio.getWaveform());
+    graphics.startLooping();
+    console.log(input.files[0]);
     await fetch(host + '/upload', {
         method: 'POST',
-        body: await files[0].arrayBuffer(),
+        body: input.files[0],
     });
+    const timeOut = 1000;
+    (async function recurr() {
+        const response = await fetch(host + '/next', {
+            method: 'POST',
+            body: JSON.stringify({ current_time: 0 })
+        });
+        console.log(response);
+        if (response.ok) {
+            startJumping();
+        } else {
+            setTimeout(recurr, timeOut);
+        }
+    })();
+}
 
-    // while (true) {
-    //     let res = await fetch(host + '/edges');
-    // }
-
-    // const audio = new Audio(ctx);
-    // const background = new BackgroundController();
-    // const waveform = new WaveformController(sampleRate);
-    // const graphics = new Graphics({ sampleRate, bpm, background, waveform });
-    // graphics.startLooping();
-    // audio.enqueueBuffer(await fetchChunk(ctx));
+async function startJumping() {
+    audio.startJumping(async current_time =>
+        (await fetch(host + '/next', {
+            method: 'POST',
+            body: JSON.stringify({ current_time })
+        })).json()
+    );
 }

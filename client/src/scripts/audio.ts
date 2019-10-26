@@ -1,45 +1,75 @@
+export type Jump = { from: number, to: number, trackid: number };
+
+export type Fetcher = (time: number) => Promise<Jump>;
+
 export class Audio {
     private readonly ctx: AudioContext;
-    private readonly queue: AudioBuffer[];
-    
+
+    private track: AudioBuffer;
+    private lastNode: AudioBufferSourceNode;
+
+    private startAt: number;
+    private startTime: number;
+
     public constructor(ctx: AudioContext) {
         this.ctx = ctx;
-        this.queue = [];
-        this.onChunkEnded = this.onChunkEnded.bind(this);
     }
 
-    public enqueue(chunk: Float32Array): void {
-        this.queue.push(this.makeBuffer(chunk));
-        if (this.queue.length == 1) {
-            this.play();
+    public async play(track: ArrayBuffer): Promise<void> {
+        this.track = await this.ctx.decodeAudioData(track);
+        this.startAt = 0;
+        this.startTime = this.ctx.currentTime;
+        this.recreateSource(0).start();
+    }
+
+    public getWaveform() {
+        return this.track.getChannelData(0);
+    }
+
+    public async startJumping(fetcher: Fetcher): Promise<void> {
+        setInterval(() => console.log(this.getCurrentTime()), 1000);
+        while (true) {
+            let { from, to, trackid } = await this.getJump(fetcher);
+            await this.wait((from - this.getCurrentTime()) * 1000);
+            const oldNode = this.lastNode;
+            this.recreateSource(trackid).start(0, to);
+            oldNode.stop();
+            this.startTime = this.ctx.currentTime;
+            this.startAt = to;
         }
     }
 
-    public enqueueBuffer(buff: AudioBuffer): void {
-        this.queue.push(buff);
-        if (this.queue.length == 1) {
-            this.play();
+    public getCurrentTime(): number {
+        const now = this.startAt + (this.ctx.currentTime - this.startTime);
+        return now - Math.floor(now / this.track.duration) * this.track.duration;
+    }
+
+    public getTrackDuration() {
+        return this.track.duration;
+    }
+
+    private recreateSource(trackid: number) {
+        const sourceNode = this.ctx.createBufferSource();
+        sourceNode.connect(this.ctx.destination);
+        sourceNode.loop = true;
+        sourceNode.buffer = this.track;
+        return this.lastNode = sourceNode;
+    }
+
+    private async getJump(fetcher: Fetcher, retry = 2): Promise<Jump> {
+        let { from, to, trackid } = await fetcher(this.getCurrentTime());
+        console.log(from, to);
+        if (from < this.getCurrentTime()) {
+            [ to, from ] = [ from, to ];
         }
-    }
-
-    private play(): void {
-        const source = this.ctx.createBufferSource();
-        source.buffer = this.queue[0];
-        source.connect(this.ctx.destination);
-        source.onended = this.onChunkEnded;
-        source.start();
-    }
-
-    private onChunkEnded(): void {
-        this.queue.shift();
-        if (this.queue.length != 0) {
-            this.play();
+        if (from - this.getCurrentTime() > 30 && retry > 0) {
+            return this.getJump(fetcher, retry - 1);
         }
+        return { from, to, trackid };
     }
 
-    private makeBuffer(chunk: Float32Array): AudioBuffer {
-        const buffer = this.ctx.createBuffer(2, chunk.length, this.ctx.sampleRate);
-        buffer.copyToChannel(chunk, 0);
-        return buffer;
+    private wait(millis: number) {
+        console.log(`waiting ${millis} millis`);
+        return new Promise(resolve => setTimeout(resolve, millis));
     }
 }
