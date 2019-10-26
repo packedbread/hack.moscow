@@ -18,12 +18,15 @@ var timeline: HTMLDivElement;
 var audio: Audio;
 
 async function main() {
-    input.addEventListener('change', onTrackInput, false);
+    input.onchange = onTrackInput;
     input.click();
     button.innerText = 'Processing...';
 }
 
 async function onTrackInput() {
+    if (input.files.length == 0) {
+        return;
+    }
     audio = new Audio(new AudioContext({ sampleRate }));
     audio.play(await new Response(input.files[0]).arrayBuffer());
     console.log(input.files[0]);
