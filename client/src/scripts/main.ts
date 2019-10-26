@@ -14,7 +14,7 @@ window.onload = () => {
     button.onclick = main;
 };
 
-const host = 'http://10.0.0.103:5000';
+const host = '';
 const sampleRate = 44100;
 const bpm = 128;
 
@@ -36,8 +36,6 @@ async function onTrackInput() {
     if (input.files.length == 0) {
         return;
     }
-    button.style.display = 'none';
-    timeline.style.display = 'block';
     audio = new Audio(new AudioContext({ sampleRate }));
     useAudio(audio);
     graphics = new Graphics(
@@ -74,24 +72,36 @@ async function onTrackInput() {
     (async function recurr() {
         const response = await jumpRequest(audio.getTotalTime());
         if (response.ok) {
-            doJump(await response.json());
-        } else {
-            setTimeout(recurr, timeOut);
+            const json = await response.json();
+            console.log('ok', json);
+            if (json.ready) {
+                button.style.display = 'none';
+                return doJump(json);
+            } else if (json.status === 'merging') {
+                button.innerText = 'Merging...';
+            } else {
+                button.innerText = 'Analyzing...'
+            }
         }
+        setTimeout(recurr, timeOut);
     })();
 }
 
 async function doJump(jump: Jump) {
+    if (jump.from < audio.getTotalTime()) {
+        [ jump.from, jump.to ] = [ jump.to, jump.from ];
+    }
     let timeToJump = audio.scheduleJump(jump);
     waveformController.scheduleJump(jump);
+    console.log(timeToJump, jump);
     setInterval(async () => {
         doJump(await (await jumpRequest(audio.getTotalTime())).json());
     }, timeToJump);
 }
 
-function jumpRequest(current_time: number) {
+function jumpRequest(time: number) {
     return fetch(host + '/next', {
         method: 'POST',
-        body: JSON.stringify({ current_time })
+        body: JSON.stringify({ time })
     });
 }

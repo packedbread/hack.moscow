@@ -45,7 +45,7 @@ async def upload(request: web.Request):
         if field.name != 'files[]': continue
 
         size = 0
-        path = os.path.join(tempdir, field.filename)
+        path = os.path.join(tempdir, str(len(files)))
         file = await aiofiles.open(path, mode='wb')
 
         while True:
@@ -70,7 +70,7 @@ async def upload(request: web.Request):
     return web.Response(status=200, text=client.uid)
 
 
-@routes.get('/next')
+@routes.post('/next')
 async def get_next(request):
     print(clients.clients)
     try: data = await request.json()

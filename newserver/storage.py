@@ -8,7 +8,7 @@ import random
 
 import algorithms
 
-JUMP_DETECTOR_CLASS = algorithms.SecondJumpDetector
+JUMP_DETECTOR_CLASS = algorithms.FirstJumpDetector
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ class ClientStorage:
         finally:
             logging.debug('Cleaning up...')
             path = os.path.dirname(files[0])
-            shutil.rmtree(path, ignore_errors=True)
+            # shutil.rmtree(path, ignore_errors=True)
 
     def next_jump(self, current_time):
         # TODO

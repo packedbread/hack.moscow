@@ -11,6 +11,8 @@ export class Audio {
     private nowIndex: number;
     private nowPlaying: AudioBufferSourceNode;
 
+    private totalDuration: number;
+
     public constructor(ctx: AudioContext) {
         this.ctx = ctx;
         this.tracks = [];
@@ -19,12 +21,14 @@ export class Audio {
 
     public async init(tracks: ArrayBuffer[]): Promise<void> {
         this.nodes.length = this.tracks.length = tracks.length;
+        this.totalDuration = 0;
         for (let i = 0; i != tracks.length; ++i) {
             this.tracks[i] = await this.ctx.decodeAudioData(tracks[i]);
             this.nodes[i] = this.recreateSource(i);
+            this.totalDuration += this.tracks[i].duration;
         }
         this.jumpTo(0);
-        setInterval(() => console.log(this.getCurrentTime()), 1000);
+        setInterval(() => console.log(this.getTotalTime()), 1000);
     }
 
     public getWaveforms() {
@@ -44,8 +48,11 @@ export class Audio {
     }
 
     public scheduleJump(jump: Jump) {
-        const now = this.getCurrentTime();
-        const diff = (this.localize(jump.from) - now) * 1000;
+        const now = this.getTotalTime();
+        let diff = (jump.from - now) * 1000;
+        if (diff < 0) {
+            diff += this.totalDuration * 1000;
+        }
         setTimeout(() => this.jumpTo(jump.to), diff);
         return diff;
     }
