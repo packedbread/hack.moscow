@@ -1,14 +1,12 @@
-from scipy.io import wavfile
-from scipy.fftpack import rfft, irfft
-from scipy.signal import find_peaks
-from matplotlib.pyplot import figure
-import matplotlib.pyplot as plt
+from .abstract import AbstractJumpDetector
+from scipy.signal import butter, lfilter
 import numpy as np
-import scipy
-import aubio
-from collections import defaultdict
-from scipy.signal import butter, lfilter, freqz
-import random
+
+
+class LevJumpDetector(AbstractJumpDetector):
+    def extract_jumps(self):
+        return RUNLEVA(self.sample_rate, self.channels)
+
 
 def RUNLEVA(sample_rate, channels):
     data_length = channels[:, 0].shape[0]
@@ -16,8 +14,8 @@ def RUNLEVA(sample_rate, channels):
     amplitude = max(max(data), -min(data))
     data = list(map(lambda x: x / amplitude, data))
 
-    left = sample_rate*10
-    right = sample_rate*40
+    left = sample_rate * 10
+    right = sample_rate * 40
 
     TACTSIZE = 2
     LEVADEBIL = True
@@ -89,7 +87,7 @@ def RUNLEVA(sample_rate, channels):
         cnt = dict()
         for i in range(len(bpms)):
             cnt[bpms[i]] = 0
-        
+
         for i in range(len(peaks) - 1):
             a = peaks[i]
             b = peaks[i + 1]
@@ -102,13 +100,13 @@ def RUNLEVA(sample_rate, channels):
             for j in range(len(bpms)):
                 if abs(bpms[cbpm] - val) > abs(bpms[j] - val):
                     cbpm = j
-                    
+
             cnt[bpms[cbpm]] += 1
-        
+
         srt = []
         for k, v in cnt.items():
             srt.append([v, k])
-        
+
         srt.sort(reverse=True)
         avg = 0
         cnt = 0
@@ -118,7 +116,7 @@ def RUNLEVA(sample_rate, channels):
                 cnt += 1
         return round(60 * sample_rate / (avg / cnt))
 
-    def GETTACTS(data, pkst, bpm, slid = 0):
+    def GETTACTS(data, pkst, bpm, slid=0):
         tacts = []
         smpl = 60 * sample_rate // bpm
         start = pkst
@@ -127,7 +125,7 @@ def RUNLEVA(sample_rate, channels):
             start -= smpl * 4
         start += smpl * 4
         for i in range(start, len(data), smpl):
-            tacts.append(data[i:(i+smpl)])
+            tacts.append(data[i:(i + smpl)])
         return tacts, start, smpl
 
     def GETTACTSIND(data, start, bpm):
@@ -149,16 +147,15 @@ def RUNLEVA(sample_rate, channels):
         return spectrum
 
     def MSE(a):
-        return (a**2).mean()
+        return (a ** 2).mean()
 
     def CNTERR(a, b, l, r):
-        #if r + 4*GLSM >= len(data):
+        # if r + 4*GLSM >= len(data):
         #    return 1e9
-        #sa = GETFFT(l, l + TACTSIZE*GLSM)
-        #sb = GETFFT(r, r + TACTSIZE*GLSM)
-        #dif = np.abs(sa-sb)
-        return MSE(a-b)
-        
+        # sa = GETFFT(l, l + TACTSIZE*GLSM)
+        # sb = GETFFT(r, r + TACTSIZE*GLSM)
+        # dif = np.abs(sa-sb)
+        return MSE(a - b)
 
     def SIMILAR(E, thres):
         res = []
@@ -166,12 +163,11 @@ def RUNLEVA(sample_rate, channels):
             if LEVADEBIL and i % 5 == 0:
                 print("sim " + str(i))
             for j in range(i + 4, len(E), 4):
-                err = CNTERR(E[i], E[j], GLST + GLSM*i, GLST + GLSM*j)
+                err = CNTERR(E[i], E[j], GLST + GLSM * i, GLST + GLSM * j)
                 if err < thres:
                     res.append([i, j])
                     res.append([j, i])
         return res
-
 
     if LEVADEBIL:
         print("filtering")
@@ -193,7 +189,7 @@ def RUNLEVA(sample_rate, channels):
     if LEVADEBIL:
         print("piki")
 
-    peaks = FINDPEAKS(mxw, sample_rate//5, 20)
+    peaks = FINDPEAKS(mxw, sample_rate // 5, 20)
     BPM = CNTBPM(peaks)
     if LEVADEBIL:
         print("bpm " + str(BPM))
@@ -224,5 +220,5 @@ def RUNLEVA(sample_rate, channels):
 
     return GRAPH
 
-#sample_rate, channels = wavfile.read("do.wav")
-#print(RUNLEVA(sample_rate, channels))
+# sample_rate, channels = wavfile.read("do.wav")
+# print(RUNLEVA(sample_rate, channels))
