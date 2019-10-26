@@ -94,7 +94,7 @@ async function doJump(jump: Jump) {
     let timeToJump = audio.scheduleJump(jump);
     waveformController.scheduleJump(jump);
     console.log(timeToJump, jump);
-    setInterval(async () => {
+    setTimeout(async () => {
         doJump(await (await jumpRequest(audio.getTotalTime())).json());
     }, timeToJump);
 }
