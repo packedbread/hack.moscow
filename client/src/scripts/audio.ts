@@ -36,7 +36,3 @@ export class Audio {
         return buffer;
     }
 }
-
-// 1. decode file
-// 2.a) enqueue chunk
-// 2.b) enqueue by timestamp
