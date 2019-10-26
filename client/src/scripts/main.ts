@@ -73,6 +73,13 @@ async function onTrackInput() {
             if (json.ready) {
                 button.style.display = 'none';
                 timeline.style.display = 'block';
+                setInterval(() => {
+                    $('#next-jump').innerText = `Next jump: ${round(lastJump.from)} >>> ${round(lastJump.to)}`;
+                    $('#time-now').innerText = `Current time: ${round(audio.getTotalTime())}`;
+                    let time = lastJump.from - audio.getTotalTime();
+                    if (time < 0) time += audio.getTotalDuration();
+                    $('#time-left').innerText = `Until jump: ${round(time)}`
+                }, 10);
                 return doJump(json);
             } else if (json.status === 'merging') {
                 button.innerText = 'Merging...';
@@ -82,6 +89,10 @@ async function onTrackInput() {
         }
         setTimeout(recurr, timeOut);
     })();
+}
+
+function round(x: number) {
+    return Math.round(x * 100) / 100;
 }
 
 function doJump(jump: Jump) {
