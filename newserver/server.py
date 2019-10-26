@@ -50,7 +50,7 @@ async def upload(request: web.Request):
 
         while True:
             if size > MAX_FILE_SIZE:
-                os.rmdir(tempdir)
+                shutil.rmtree(tempdir, ignore_errors=True)
                 raise web.Response(status=403, text='Too large file')
             chunk = await field.read_chunk()
             if not chunk: break
@@ -85,7 +85,7 @@ async def get_next(request):
     }
 
     if client.status == 'ready':
-        from_, to = client.next_jump(data['time'])
+        from_, to = client.make_next_jump(data['time'])
         result['from'], result['to'] = from_, to
 
     return web.json_response(data=result)

@@ -1,9 +1,9 @@
 from .first import FirstJumpDetector
-from .second import SecondJumpDetector
+from .second import NonCommonMaxFrequenceIndexesAlgoJumpDetector
 from .lev import LevJumpDetector
 
 __all__ = [
     'FirstJumpDetector',
-    'SecondJumpDetector',
+    'NonCommonMaxFrequenceIndexesAlgoJumpDetector',
     'LevJumpDetector',
 ]

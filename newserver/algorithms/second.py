@@ -9,11 +9,9 @@ import time
 logger = logging.getLogger(__name__)
 
 
-class NonCommonMaxFrequenceIndexesAlgo:
-    def __init__(self, sample_rate, data):
-        self.sample_rate = sample_rate
-        self.signal = np.average(data, axis=1)
-        self.signal /= np.max(np.abs(self.signal))
+class NonCommonMaxFrequenceIndexesAlgoJumpDetector(AbstractJumpDetector):
+    def extract_jumps(self):
+        return self.run()
 
     def run(self, window_size=4096, stride=256, n=8, threshold=None):
         print('Starting NonCommonMaxFrequenceIndexesAlgo precalc...', flush=True)
