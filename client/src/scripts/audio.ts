@@ -1,4 +1,4 @@
-export type Jump = { from: number, to: number };
+export type Jump = { from: number, to: number, trackid: number };
 
 export type Fetcher = (time: number) => Promise<Jump>;
 
@@ -19,23 +19,23 @@ export class Audio {
         this.track = await this.ctx.decodeAudioData(track);
         this.startAt = 0;
         this.startTime = this.ctx.currentTime;
-        this.recreateSource().start();
+        this.recreateSource(0).start();
     }
 
     public async startJumping(fetcher: Fetcher): Promise<void> {
         setInterval(() => console.log(this.getTime()), 1000);
         while (true) {
-            let { from, to } = await this.getJump(fetcher);
+            let { from, to, trackid } = await this.getJump(fetcher);
             await this.wait((from - this.getTime()) * 1000);
             const oldNode = this.lastNode;
-            this.recreateSource().start(0, to);
+            this.recreateSource(trackid).start(0, to);
             oldNode.stop();
             this.startTime = this.ctx.currentTime;
             this.startAt = to;
         }
     }
 
-    private recreateSource() {
+    private recreateSource(trackid: number) {
         const sourceNode = this.ctx.createBufferSource();
         sourceNode.connect(this.ctx.destination);
         sourceNode.loop = true;
@@ -44,7 +44,7 @@ export class Audio {
     }
 
     private async getJump(fetcher: Fetcher, retry = 2): Promise<Jump> {
-        let { from, to } = await fetcher(this.getTime());
+        let { from, to, trackid } = await fetcher(this.getTime());
         console.log(from, to);
         if (from < this.getTime()) {
             [ to, from ] = [ from, to ];
@@ -52,7 +52,7 @@ export class Audio {
         if (from - this.getTime() > 30 && retry > 0) {
             return this.getJump(fetcher, retry - 1);
         }
-        return { from, to };
+        return { from, to, trackid };
     }
 
     private getTime(): number {

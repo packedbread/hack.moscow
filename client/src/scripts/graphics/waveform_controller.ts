@@ -1,6 +1,6 @@
-import {$} from '../util';
+import { $ } from '../util';
 
-export class WaveformController {
+export class WaveformController implements GraphicsController {
     private readonly sampleRate: number;
     private readonly pixelsPerSec: number;
     private readonly secondsPerBar = 0.1;
@@ -8,6 +8,8 @@ export class WaveformController {
     private readonly pixelsPerBar = 10;
 
     private readonly canvas: HTMLCanvasElement;
+
+    private bars: number[];
 
     public constructor(sampleRate: number) {
         this.sampleRate = sampleRate;
@@ -26,11 +28,11 @@ export class WaveformController {
             volume = Math.log10(volume / window.length);
             bars.unshift(volume);
         }
-        return bars;
+        this.bars = bars;
     }
 
-    public addChunk(chunk: Float32Array) {
-        // TODO
+    init() {
+        //
     }
 
     public update(time: number) {
