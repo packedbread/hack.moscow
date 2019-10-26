@@ -5,7 +5,7 @@ import { Graphics } from './graphics/graphics';
 import { WaveformController } from './graphics/waveform_controller';
 import { CaretController } from './graphics/caret_controller';
 import { BackgroundController } from './graphics/background_controller';
-import { useAudio } from './time';
+import { useAudio, getSongTime } from './time';
 
 window.onload = () => {
     input = $('#input');
@@ -14,7 +14,7 @@ window.onload = () => {
     button.onclick = main;
 };
 
-const host = 'http://0.0.0.0:5000';
+const host = '';
 const sampleRate = 44100;
 const bpm = 128;
 

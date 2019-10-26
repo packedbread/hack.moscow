@@ -10,7 +10,7 @@ from itertools import chain
 
 import algorithms
 
-JUMP_DETECTOR_CLASS = algorithms.SecondJumpDetector
+JUMP_DETECTOR_CLASS = algorithms.FirstJumpDetector
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,7 @@ class ClientStorage:
     def __init__(self):
         self.uid = str(uuid4())
         self.clients[self.uid] = self
+        self.status = 'idling'
         self.jumps = None
 
     @staticmethod
@@ -49,6 +50,7 @@ class ClientStorage:
     async def handle_upload(self, files):
         try:
             logging.debug('Merging files...')
+            self.status = 'merging'
             target = partial(self.merge, files)
             merged = await self.loop.run_in_executor(self.pool, target)
             if merged is None:
@@ -56,15 +58,17 @@ class ClientStorage:
                 return
 
             logging.debug('Extracting jumps...')
+            self.status = 'extracting'
             target = partial(JUMP_DETECTOR_CLASS.handle, merged)
             self.jumps = await self.loop.run_in_executor(self.pool, target)
+            self.status = 'ready'
 
             logging.debug('Postprocessing jumps...')
             self.jumps = await self.loop.run_in_executor(self.pool, self.postprocess_jumps)
         finally:
             logging.debug('Cleaning up...')
             path = os.path.dirname(files[0])
-            shutil.rmtree(path, ignore_errors=True)
+            # shutil.rmtree(path, ignore_errors=True)
 
     def _partition_jumps(self, window_size):
         ivalue_pairs = []
