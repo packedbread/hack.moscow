@@ -61,7 +61,6 @@ export class Audio {
     private recreateSource(trackid: number) {
         const sourceNode = this.ctx.createBufferSource();
         sourceNode.connect(this.ctx.destination);
-        sourceNode.loop = true;
         sourceNode.buffer = this.tracks[trackid];
         sourceNode.onended = () => {
             this.play((trackid + 1) % this.tracks.length, 0);
