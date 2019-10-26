@@ -5,6 +5,7 @@ import aiofiles
 import tempfile
 import asyncio
 import logging
+import shutil
 import os
 
 MAX_FILE_SIZE = 20 * 1024 * 1024
@@ -84,6 +85,8 @@ async def on_prepare(_, response):
 
 
 if __name__ == '__main__':
+    shutil.rmtree(TEMP_PATH, ignore_errors=True)
+    os.mkdir(TEMP_PATH)
     app.add_routes(routes)
     port = os.getenv('PORT', 5000)
     web.run_app(app, port=port)
