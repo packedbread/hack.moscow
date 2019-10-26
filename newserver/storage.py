@@ -25,6 +25,7 @@ class ClientStorage:
     def __init__(self):
         self.uid = str(uuid4())
         self.clients[self.uid] = self
+        self.status = 'idling'
         self.jumps = None
 
     @staticmethod
@@ -47,6 +48,7 @@ class ClientStorage:
     async def handle_upload(self, files):
         try:
             logging.debug('Merging files...')
+            self.status = 'merging'
             target = partial(self.merge, files)
             merged = await self.loop.run_in_executor(self.pool, target)
             if merged is None:
@@ -54,12 +56,15 @@ class ClientStorage:
                 return
 
             logging.debug('Extracting jumps...')
+            self.status = 'extracting'
             target = partial(JUMP_DETECTOR_CLASS.handle, merged)
             self.jumps = await self.loop.run_in_executor(self.pool, target)
+            self.status = 'ready'
         finally:
             logging.debug('Cleaning up...')
             path = os.path.dirname(files[0])
             shutil.rmtree(path, ignore_errors=True)
 
-    def make_next_jump(self, current_time):
+    def next_jump(self, current_time):
+        # TODO
         return random.choice(self.jumps)

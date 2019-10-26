@@ -28,10 +28,6 @@ async def index(_):
     return web.FileResponse(STATIC_PATH + '/index.html')
 
 
-# Other trash
-routes.static('/', STATIC_PATH)
-
-
 # Upload multiple files
 @routes.post('/upload')
 @routes.route('OPTIONS', '/upload')
@@ -74,6 +70,27 @@ async def upload(request: web.Request):
     return web.Response(status=200, text=client.uid)
 
 
+@routes.get('/next')
+async def get_next(request):
+    print(clients.clients)
+    try: data = await request.json()
+    except: data = {'time': 0}
+    if not clients.clients: return web.HTTPNotFound()
+
+    # Could get client by uid
+    client = next(iter(clients.clients.values()))
+    result = {
+        'status': client.status,
+        'ready': client.status == 'ready',
+    }
+
+    if client.status == 'ready':
+        from_, to = client.next_jump(data['time'])
+        result['from'], result['to'] = from_, to
+
+    return web.json_response(data=result)
+
+
 # Disable CORS globally
 @app.on_response_prepare.append
 async def on_prepare(_, response):
@@ -85,8 +102,12 @@ async def on_prepare(_, response):
 
 
 if __name__ == '__main__':
+    # Cleanup temp dir
     shutil.rmtree(TEMP_PATH, ignore_errors=True)
     os.mkdir(TEMP_PATH)
+    # Serve static & register routes
+    routes.static('/', STATIC_PATH)
     app.add_routes(routes)
+    # Start
     port = os.getenv('PORT', 5000)
     web.run_app(app, port=port)
