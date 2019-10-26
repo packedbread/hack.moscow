@@ -1,4 +1,5 @@
 from collections import Counter, defaultdict
+from scipy.fftpack import rfft
 from .abstract import AbstractJumpDetector
 from skimage import util
 import numpy as np
@@ -8,19 +9,22 @@ import time
 logger = logging.getLogger(__name__)
 
 
-class SecondJumpDetector(AbstractJumpDetector):
-    def extract_jumps(self):
-        return self.run()
+class NonCommonMaxFrequenceIndexesAlgo:
+    def __init__(self, sample_rate, data):
+        self.sample_rate = sample_rate
+        self.signal = np.average(data, axis=1)
+        self.signal /= np.max(np.abs(self.signal))
 
-    def run(self, window_size=4096, stride=256, n=6, threshold=None):
+    def run(self, window_size=4096, stride=256, n=8, threshold=None):
         print('Starting NonCommonMaxFrequenceIndexesAlgo precalc...', flush=True)
         start_time = time.time()
-        threshold = threshold or 7 * n // 8
+        threshold = threshold or 6 * n // 8
         windows = util.view_as_windows(self.signal, window_shape=(window_size,), step=stride)
         windows = windows * np.hanning(window_size)
 
         print('Beginning window fft...', flush=True)
-        spectrum = np.abs(np.fft.fft(windows, axis=0))[:window_size // 2]
+        spectrum = rfft(windows)
+        
         frequencies = np.fft.fftfreq(window_size)[:window_size // 2] * self.sample_rate
         print('Finished window fft.', flush=True)
 
@@ -28,8 +32,7 @@ class SecondJumpDetector(AbstractJumpDetector):
             return next(i for i, value in enumerate(frequencies) if value > lowest_frequency)
 
         def highest_index(window, highest_frequency=400):
-            return next(
-                len(frequencies) - i for i, value in enumerate(reversed(frequencies)) if value < highest_frequency)
+            return next(len(frequencies) - i for i, value in enumerate(reversed(frequencies)) if value < highest_frequency)
 
         def poly_hash(data, P=79):
             value = 0
@@ -50,12 +53,12 @@ class SecondJumpDetector(AbstractJumpDetector):
             current_ngram = list(current_ngram[1:]) + [index]
             if current_ngram.count(most_common_index) >= threshold:
                 continue
-            ngram_dict[poly_hash(current_ngram)].append(i - n + 1)
+            ngram_dict[poly_hash(current_ngram)].append(i * stride + window_size / 2)
 
         print('All viable edge transfers: ', flush=True)
         for key, value in ngram_dict.items():
             if len(value) > 1:
-                print(key, value)
+                print(key, np.array(value) / self.sample_rate)
 
         edges = []
         for key, value in ngram_dict.items():
@@ -63,6 +66,5 @@ class SecondJumpDetector(AbstractJumpDetector):
                 for second in value[index + 1:]:
                     edges.append([first, second])
         end_time = time.time()
-        print(f'Finished NonCommonMaxFrequenceIndexesAlgo precalc, done in {int(end_time - start_time) * 1000}ms.',
-              flush=True)
+        print(f'Finished NonCommonMaxFrequenceIndexesAlgo precalc, done in {int(end_time - start_time) * 1000}ms.', flush=True)
         return np.array(edges, dtype=np.float) / self.sample_rate
