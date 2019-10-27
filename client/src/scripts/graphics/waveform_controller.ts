@@ -31,9 +31,13 @@ export class WaveformController implements GraphicsController {
     }
 
     public freezeSignals(signals: Float32Array[]) {
-        let bars = this.bars = [];
-        signals.map(x => bars.push(...this.freezeSignal(x)));
-        console.log(bars);
+        this.bars = signals
+                .map(x => this.freezeSignal(x))
+                .reduce((bars, x) => {
+                    bars.push(...x);
+                    return bars;
+                });
+        console.log(this.bars);
     }
 
     private freezeSignal(signal: Float32Array) {
@@ -58,7 +62,6 @@ export class WaveformController implements GraphicsController {
         const width = this.pixelsPerBar - this.barPadding * 2;
         for (let gr = 0; gr <= this.bars.length / barsInGraphics; ++gr) {
             const bars = new PIXI.Graphics();
-            bars.beginFill(0xffffff);
             for (let j = 0; j != barsInGraphics; ++j) {
                 const i = gr * barsInGraphics + j;
                 if (i >= this.bars.length) {
@@ -68,10 +71,12 @@ export class WaveformController implements GraphicsController {
                 const height = Math.max(this.canvas.height * this.bars[i], radius * 2);
                 const y = (this.canvas.height - height) / 2;
                 // if (height < radius * 2) continue;
+                bars.beginFill(this.getColor(this.bars[i]));
                 bars.drawRoundedRect(x, y, width, height, radius);
                 bars.drawRoundedRect(x + totalWidth, y, width, height, radius);
+                bars.drawRoundedRect(x - totalWidth, y, width, height, radius);
+                bars.endFill();
             }
-            bars.endFill();
             this.pixiApp.stage.addChild(bars);
         }
     }
@@ -94,5 +99,9 @@ export class WaveformController implements GraphicsController {
         const { width, height } = this.canvas.getBoundingClientRect();
         console.log(width, height);
         this.pixiApp.renderer.resize(width, height);
+    }
+
+    private getColor(ratio: number) {
+        return 0xffffff;
     }
 }

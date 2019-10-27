@@ -38,15 +38,15 @@ export class Audio {
     }
 
     jumpTo(time: number) {
-        for (this.nowIndex = 0; this.nowIndex != this.tracks.length; ++this.nowIndex) {
-            let duration = this.tracks[this.nowIndex].duration;
+        for (let i = 0; i != this.tracks.length; ++i) {
+            let duration = this.tracks[i].duration;
             if (time < duration) {
+                this.play(i, time);
                 break;
             } else {
                 time -= duration;
             }
         }
-        this.play(this.nowIndex, time);
     }
 
     public scheduleJump(jump: Jump) {
@@ -71,7 +71,7 @@ export class Audio {
         for (let i = 0; i != this.nowIndex; ++i) {
             time += this.tracks[i].duration;
         }
-        return time += this.getCurrentTime();
+        return time + this.getCurrentTime();
     }
 
     public getTrackDuration() {
@@ -83,9 +83,12 @@ export class Audio {
     }
 
     private recreateSource(trackid: number) {
+        console.log('creating new Source');
         const sourceNode = this.ctx.createBufferSource();
+        sourceNode.loop = false;
         sourceNode.buffer = this.tracks[trackid];
         sourceNode.onended = () => {
+            console.log(trackid, 'ended');
             this.play((trackid + 1) % this.tracks.length, 0);
         };
         const gainNode = this.ctx.createGain();
@@ -96,6 +99,7 @@ export class Audio {
     }
 
     private play(index: number, from: number) {
+        this.nowIndex = index;
         const oldPlaying = this.nowPlaying;
         [ this.nowPlaying, this.nodes[index] ] = [ this.nodes[index], this.recreateSource(index) ];
         this.startAt = from;
@@ -107,16 +111,6 @@ export class Audio {
             oldPlaying.node.onended = () => {};
             oldPlaying.node.stop(fadeEndTime);
             oldPlaying.gain.gain.linearRampToValueAtTime(0, fadeEndTime);
-        }
-    }
-
-    private localize(time: number) {
-        for (let i = 0; i != this.tracks.length; ++i) {
-            if (this.tracks[i].duration > time) {
-                return time;
-            } else {
-                time -= this.tracks[i].duration;
-            }
         }
     }
 }

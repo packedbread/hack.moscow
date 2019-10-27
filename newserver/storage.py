@@ -10,7 +10,7 @@ import numpy as np
 import algorithms
 
 BASE_FFMPEG_CMD = 'ffmpeg -hide_banner -loglevel quiet '
-JUMP_DETECTOR_CLASS = algorithms.NonCommonMaxFrequenceIndexesAlgoJumpDetector
+JUMP_DETECTOR_CLASS = algorithms.FirstJumpDetector
 
 logger = logging.getLogger('Storage')
 
