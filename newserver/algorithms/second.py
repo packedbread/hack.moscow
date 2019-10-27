@@ -13,7 +13,7 @@ class NonCommonMaxFrequenceIndexesAlgoJumpDetector(AbstractJumpDetector):
     def extract_jumps(self):
         return self.run()
 
-    def run(self, window_size=4096, stride=256, n=8, threshold=None):
+    def run(self, window_size=12000, stride=1024, n=8, threshold=None):
         print('Starting NonCommonMaxFrequenceIndexesAlgo precalc...', flush=True)
         start_time = time.time()
         threshold = threshold or 6 * n // 8
@@ -55,11 +55,13 @@ class NonCommonMaxFrequenceIndexesAlgoJumpDetector(AbstractJumpDetector):
 
         print('All viable edge transfers: ', flush=True)
         for key, value in ngram_dict.items():
-            if len(value) > 1:
+            if 1 < len(value) < 3:
                 print(key, np.array(value) / self.sample_rate)
 
         edges = []
         for key, value in ngram_dict.items():
+            if len(value) > 2:
+                continue
             for index, first in enumerate(value):
                 for second in value[index + 1:]:
                     edges.append([first, second])
