@@ -55,17 +55,12 @@ class FirstJumpDetector(AbstractJumpDetector):
                 hash_result[(result_part[1] - start_time) // stride] = result_part[0]
 
 
-        print(hash_result)
-
         hash_map = defaultdict(lambda: [])
         chunk_length = 30
         temp, mod = int(0), int(117)
         MOD = int(1e9 + 7)
         kek = int(mod**(chunk_length - 1)) % MOD
 
-        # for i in range(len(hash_result)):
-        #     if hash_result[i] == 0:
-        #         print(i)
 
         for i in range(chunk_length):
             temp *= mod
@@ -84,8 +79,6 @@ class FirstJumpDetector(AbstractJumpDetector):
             temp %= MOD
 
             hash_map[temp].append(start_time + i * stride)
-
-        print(hash_map)
 
         for _, item in tqdm(hash_map.items()):
             for i in range(len(item)):
