@@ -6,12 +6,11 @@ import shutil
 import os
 import random
 import numpy as np
-from itertools import chain
 
 import algorithms
 
-JUMP_DETECTOR_CLASS = algorithms.LevJumpDetector
 BASE_FFMPEG_CMD = 'ffmpeg -hide_banner -loglevel quiet '
+JUMP_DETECTOR_CLASS = algorithms.NonCommonMaxFrequenceIndexesAlgoJumpDetector
 
 logger = logging.getLogger('Storage')
 
@@ -30,6 +29,7 @@ class ClientStorage:
         self.clients[self.uid] = self
         self.status = 'idling'
         self.jumps = None
+        self.composition_length = None
 
     @staticmethod
     def transcode(filepath):
@@ -61,7 +61,8 @@ class ClientStorage:
             logging.critical('Extracting jumps...')
             self.status = 'extracting'
             target = partial(JUMP_DETECTOR_CLASS.handle, merged)
-            self.jumps = np.array(await self.loop.run_in_executor(self.pool, target))
+            self.jumps, self.composition_length = await self.loop.run_in_executor(self.pool, target)
+            self.jumps = np.array(self.jumps)
             self.status = 'ready'
 
             logging.critical('Postprocessing jumps...')
@@ -103,17 +104,48 @@ class ClientStorage:
                 jumps_to_remove.add(i)
         return self.jumps[[i for i in range(self.jumps.shape[0]) if i not in jumps_to_remove]]
 
+    def _roulette_selector(self, values):
+        values = np.array(values, dtype=np.float)
+        values /= np.sum(values)
+        cummulative = [0]
+        for dist_perc in values:
+            cummulative.append(dist_perc + cummulative[-1])
+        value = random.random()
+
+        def bin_find(value):
+            left = 0
+            right = len(cummulative) - 1
+            while right - left > 1:
+                middle = left + (right - left) // 2
+                if cummulative[middle] > value:
+                    right = middle
+                else:
+                    left = middle
+            return left
+
+        return bin_find(value)
+
     def next_jump(self, current_time):
-        first = 0
-        for i in range(len(self.jumps)):
-            if self.jumps[i][0] > current_time:
-                first = i
-                break
-        answ = 0
-        while True:
-            if abs(current_time - self.jumps[first][0]) > 2 and random.randint(0, 100) < 5:
-                answ = first
-                break
-            first += 1
-            first %= len(self.jumps)
-        return self.jumps[answ]
+        def distance(jump):
+            jump.sort()
+            if jump[0] > current_time:
+                return jump[0] - current_time
+            elif jump[1] > current_time:
+                return jump[1] - current_time
+            else:
+                return self.composition_length - current_time + jump[0]
+
+        def length(jump):
+            return abs(jump[0] - jump[1])
+
+        distances = np.array([distance(jump) for jump in self.jumps], dtype=np.float)
+        distances /= np.sum(distances)
+
+        lengths = np.array([length(jump) for jump in self.jumps], dtype=np.float)
+        lengths /= np.sum(lengths)
+
+        distances_weight = -0.5
+
+        normed_probs = distances * distances_weight + lengths * (1.0 - distances_weight)
+
+        return self.jumps[self._roulette_selector(normed_probs)]
