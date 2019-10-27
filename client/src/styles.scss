@@ -51,6 +51,7 @@ $triangle-max-delta: 2.7rem;
     &:before, &:after {
         position: absolute;
         width: 100%;
+        font-size: $triangle-max-delta;
 
         height: 2rem;
         color: #FF357F;
@@ -59,9 +60,9 @@ $triangle-max-delta: 2.7rem;
         justify-content: center;
         align-items: center;
 
-        animation: pulse 1s 0s infinite;
-        animation-timing-function: ease-in-out;
-        animation-duration: calc(60 / var(--bpm) * 1s);
+        //animation: pulse 1s 0s infinite;
+        //animation-timing-function: ease-in-out;
+        //animation-duration: calc(60 / var(--bpm) * 1s);
     }
 
     @keyframes pulse {
@@ -116,11 +117,7 @@ $triangle-max-delta: 2.7rem;
     display: flex;
     justify-content: center;
     align-items: center;
-
-    span {
-        // ...
-        padding-top: 0.5rem;
-    }
+    box-shadow: 5px 5px 30px 0 #0000009c;
 
     &:after {
         position: absolute;
@@ -132,6 +129,7 @@ $triangle-max-delta: 2.7rem;
         width: 150%;
         z-index: -1;
         left: -50%;
+        top: 0;
         transition: left 400ms ease-in;
     }
 
@@ -155,6 +153,11 @@ $triangle-max-delta: 2.7rem;
     border-radius: 1rem;
     letter-spacing: 0.4rem;
     font-size: 4rem;
+    padding-top: 0.7rem;
+
+    &::content {
+        margin-top: 1rem;
+    }
 }
 
 #info {
@@ -193,4 +196,82 @@ $triangle-max-delta: 2.7rem;
         }
     }
 
+}
+
+#navigator {
+    position: absolute;
+    bottom: 3rem;
+    left: 50%;
+    transform: translateX(-50%);
+    cursor: pointer;
+
+    height: 1rem;
+    width: 80vw;
+    display: flex;
+
+    * {
+        pointer-events: none;
+    }
+
+    .cursor {
+        display: block;
+        position: absolute;
+        top: 0;
+        margin: 0;
+        height: 1rem;
+        width: 1rem;
+        vertical-align: middle;
+        background: white;
+        border-radius: 50%;
+
+    }
+
+    .jump {
+        position: absolute;
+        width: 50%;
+        height: 1rem;
+        top: 0;
+        transform: translateY(-100%);
+        margin: 0;
+        border-top-left-radius: 1rem;
+        border-top-right-radius: 1rem;
+        border: 2px solid white;
+        border-bottom: 0;
+    }
+
+    div {
+        display: block;
+        height: 100%;
+        background: red;
+
+        &:first-of-type {
+            border-top-left-radius: 1rem;
+            border-bottom-left-radius: 1rem;
+        }
+
+        &:last-of-type {
+            border-top-right-radius: 1rem;
+            border-bottom-right-radius: 1rem;
+        }
+
+        @mixin gradient($color) {
+            background: linear-gradient(90deg, $color 80%, lighten($color, 10) 100%);
+        }
+
+        &:nth-of-type(1) {
+            @include gradient(#3BADE3);
+        }
+        &:nth-of-type(2) {
+            @include gradient(#576FE6);
+        }
+        &:nth-of-type(3) {
+            @include gradient(#9844B7);
+        }
+        &:nth-of-type(4) {
+            @include gradient(#FF357F);
+        }
+        &:nth-of-type(5) {
+            @include gradient(#ff654b);
+        }
+    }
 }

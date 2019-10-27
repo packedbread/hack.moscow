@@ -6,6 +6,7 @@ import {WaveformController} from './graphics/waveform_controller';
 import {CaretController} from './graphics/caret_controller';
 import {BackgroundController} from './graphics/background_controller';
 import {useAudio} from './time';
+import Navigator from "./navigator";
 
 window.onload = () => {
     input = $('#input');
@@ -52,8 +53,13 @@ async function onTrackInput() {
     await audio.init(await Promise.all(
         [...input.files].map(track => new Response(track).arrayBuffer())
     ));
-    waveformController.freezeSignals(audio.getWaveforms());
+    const waveforms = audio.getWaveforms();
+    waveformController.freezeSignals(waveforms);
     graphics.startLooping();
+
+    const navigator = new Navigator();
+    navigator.setSignals(waveforms);
+    navigator.hook(audio);
 
     let data = new FormData();
     for (const file of input.files)
@@ -73,6 +79,7 @@ async function onTrackInput() {
                 button.style.display = 'none';
                 timeline.style.opacity = '1';
                 $('#info').style.display = 'flex';
+                navigator.root.style.opacity = '1';
                 setInterval(() => {
                     $('#next-jump').innerText = `Next jump: ${round(lastJump.from)} >>> ${round(lastJump.to)}`;
                     $('#time-now').innerText = `Current time: ${round(audio.getTotalTime())}`;
@@ -83,8 +90,10 @@ async function onTrackInput() {
                 return doJump(json);
             } else if (json.status === 'merging') {
                 button.innerText = 'Merging...';
-            } else {
-                button.innerText = 'Analyzing...'
+            } else if (json.status === 'extracting') {
+                button.innerText = 'Analyzing...';
+            } else if (json.status === 'crashed') {
+                button.innerText = 'Crashed :(';
             }
         }
         setTimeout(recurr, timeOut);

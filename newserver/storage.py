@@ -68,6 +68,9 @@ class ClientStorage:
             logging.critical('Postprocessing jumps...')
             self.jumps = np.array(await self.loop.run_in_executor(self.pool, self.postprocess_jumps))
             self.jumps.sort()
+        except Exception as err:
+            logging.critical('CRASHED', exc_info=err)
+            self.status = 'crashed'
         finally:
             logging.critical('Cleaning up...')
             path = os.path.dirname(files[0])

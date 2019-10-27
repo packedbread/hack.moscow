@@ -13,6 +13,7 @@ export class Audio {
     private nowPlaying: {node: AudioBufferSourceNode, gain: GainNode};
 
     private totalDuration: number;
+    public onJumpChanged: Function;
 
     public constructor(ctx: AudioContext) {
         this.ctx = ctx;
@@ -49,6 +50,7 @@ export class Audio {
     }
 
     public scheduleJump(jump: Jump) {
+        this.onJumpChanged(jump);
         const now = this.getTotalTime();
         let diff = (jump.from - now) * 1000;
         if (diff < 0) {
