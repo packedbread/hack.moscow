@@ -57,7 +57,7 @@ async function onTrackInput() {
     waveformController.freezeSignals(waveforms);
     graphics.startLooping();
 
-    const navigator = new Navigator();
+    const navigator = new Navigator(seekTo);
     navigator.setSignals(waveforms);
     navigator.hook(audio);
 
@@ -136,8 +136,12 @@ function seek() {
     if (dest < 0) {
         dest += audio.getTotalDuration();
     }
-    console.log('jumping to ', dest);
-    audio.jumpTo(dest);
+    seekTo(dest);
+}
+
+function seekTo(time: number) {
+    console.log('jumping to ', time);
+    audio.jumpTo(time);
     clearTimeout(audioTimeout);
     clearTimeout(requestTimeout);
     doJump(lastJump);

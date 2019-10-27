@@ -6,17 +6,19 @@ export default class Navigator {
     jump: HTMLElement;
     audio: Audio;
 
-    constructor() {
+    constructor(seeker: (time: number) => void) {
         this.root = document.querySelector('#navigator');
         this.cursor = document.querySelector('#navigator .cursor');
         this.jump = document.querySelector('#navigator .jump');
-        this.root.onclick = this.onclick.bind(this);
+        this.root.onclick = this.onclick(seeker);
     }
 
-    onclick(event) {
-        let rect = event.target.getBoundingClientRect();
-        let pos = (event.clientX - rect.left) / rect.width;
-        this.audio.jumpTo(pos * this.audio.getTotalDuration());
+    onclick(seeker: (time: number) => void) {
+        return (event) => {
+            let rect = event.target.getBoundingClientRect();
+            let pos = (event.clientX - rect.left) / rect.width;
+            seeker(pos * this.audio.getTotalDuration());
+        };
     }
 
     hook(audio: Audio) {
