@@ -39,9 +39,8 @@ function main() {
 }
 
 async function onTrackInput() {
-    if (input.files.length == 0) {
-        return;
-    }
+    if (input.files.length == 0) return;
+    button.innerText = 'Uploading...';
     audio = new Audio(new AudioContext({sampleRate}));
     useAudio(audio);
     graphics = new Graphics(

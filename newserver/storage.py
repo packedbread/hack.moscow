@@ -10,9 +10,10 @@ from itertools import chain
 
 import algorithms
 
-JUMP_DETECTOR_CLASS = algorithms.FirstJumpDetector
+JUMP_DETECTOR_CLASS = algorithms.LevJumpDetector
+BASE_FFMPEG_CMD = 'ffmpeg -hide_banner -loglevel quiet '
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('Storage')
 
 
 class ClientStorage:
@@ -32,7 +33,7 @@ class ClientStorage:
 
     @staticmethod
     def transcode(filepath):
-        cmd = f'ffmpeg -i {filepath} -acodec pcm_s16le -ar 44100 {filepath + ".wav"}'
+        cmd = BASE_FFMPEG_CMD + f'-i {filepath} -acodec pcm_s16le -ar 44100 {filepath + ".wav"}'
         code = subprocess.call(cmd.split())
         if code != 0: return None
         return filepath + '.wav'
@@ -42,14 +43,14 @@ class ClientStorage:
         path = os.path.dirname(files[0])
         output = os.path.join(path, 'joined.wav')
         items = '|'.join(files)
-        cmd = f'ffmpeg -i concat:{items} -acodec pcm_s16le -ar 44100 {output}'
+        cmd = BASE_FFMPEG_CMD + f'-i concat:{items} -acodec pcm_s16le -ar 44100 {output}'
         code = subprocess.call(cmd.split())
         if code != 0: return None
         return output
 
     async def handle_upload(self, files):
         try:
-            logging.debug('Merging files...')
+            logging.critical('Merging files...')
             self.status = 'merging'
             target = partial(self.merge, files)
             merged = await self.loop.run_in_executor(self.pool, target)
@@ -57,17 +58,17 @@ class ClientStorage:
                 logging.error('Merge failed')
                 return
 
-            logging.debug('Extracting jumps...')
+            logging.critical('Extracting jumps...')
             self.status = 'extracting'
             target = partial(JUMP_DETECTOR_CLASS.handle, merged)
             self.jumps = np.array(await self.loop.run_in_executor(self.pool, target))
             self.status = 'ready'
 
-            logging.debug('Postprocessing jumps...')
+            logging.critical('Postprocessing jumps...')
             self.jumps = np.array(await self.loop.run_in_executor(self.pool, self.postprocess_jumps))
             self.jumps.sort()
         finally:
-            logging.debug('Cleaning up...')
+            logging.critical('Cleaning up...')
             path = os.path.dirname(files[0])
             shutil.rmtree(path, ignore_errors=True)
 
@@ -97,9 +98,9 @@ class ClientStorage:
                 left_items = items.difference(jumps_to_remove)
                 if len(left_items) > limit:
                     jumps_to_remove.update(random.choices(list(left_items), k=len(left_items) - limit))
-        for jump in self.jumps:
+        for i, jump in enumerate(self.jumps):
             if abs(jump[0] - jump[1]) < 2.0:
-                jumps_to_remove.add(jump)
+                jumps_to_remove.add(i)
         return self.jumps[[i for i in range(self.jumps.shape[0]) if i not in jumps_to_remove]]
 
     def next_jump(self, current_time):

@@ -13,8 +13,11 @@ PROCESS_POOL_SIZE = 8
 STATIC_PATH = '../client/dist'
 TEMP_PATH = 'temp'
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('Server')
+logging.basicConfig(
+    level=logging.CRITICAL,
+    format='[%(levelname)s] %(name)s: %(message)s',
+)
 clients = ClientStorage
 clients.loop = loop = asyncio.get_event_loop()
 clients.pool = pool = ProcessPoolExecutor(PROCESS_POOL_SIZE)
@@ -66,7 +69,7 @@ async def upload(request: web.Request):
     client = ClientStorage()
     future = client.handle_upload(files)
     asyncio.ensure_future(future, loop=loop)
-    logging.debug('New client storage: ' + client.uid)
+    logging.critical('New client storage: ' + client.uid)
     return web.Response(status=200, text=client.uid)
 
 
