@@ -7,16 +7,16 @@ export function useAudio(_audio: Audio) {
 }
 
 /**
- * @returns time since begin of song, in seconds
+ * @returns time since begin of playback, in seconds
  */
-export function getSongTime(): number {
-    return audio.getCurrentTime();
+export function getTotalTime(): number {
+    return audio.getTotalTime();
 }
 
 /**
- * @param time since begin of song, in seconds
- * @returns ratio time / duration of song
+ * @param time since begin of playback, in seconds
+ * @returns ratio time / total duration
  */
-export function songRatio(time: number): number {
-    return time / audio.getTrackDuration();
+export function totalRatio(time: number): number {
+    return time / audio.getTotalDuration();
 }
